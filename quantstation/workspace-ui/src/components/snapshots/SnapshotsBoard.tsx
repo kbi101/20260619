@@ -500,13 +500,12 @@ export const SnapshotsBoard: React.FC = () => {
               position: 'relative',
               overflow: 'auto',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               padding: '16px',
               background: '#040406', // Slightly darker cockpit-like backing
             }}>
               {imgLoading ? (
                 <div style={{
+                  margin: 'auto',
                   fontFamily: 'var(--qs-font-mono)',
                   fontSize: 'var(--qs-font-sm)',
                   color: 'var(--qs-text-secondary)',
@@ -515,11 +514,12 @@ export const SnapshotsBoard: React.FC = () => {
                 </div>
               ) : imgData ? (
                 <div style={{
-                  width: fitMode === 'fill' ? '100%' : 'auto',
-                  height: fitMode === 'fill' ? '100%' : 'auto',
+                  width: fitMode === 'fit' ? '100%' : fitMode === 'fill' ? '100%' : 'auto',
+                  height: fitMode === 'fit' ? '100%' : fitMode === 'fill' ? '100%' : 'auto',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  margin: 'auto',
                   transform: `scale(${zoomLevel})`,
                   transformOrigin: 'center center',
                   transition: 'transform 150ms ease-out',
@@ -540,6 +540,7 @@ export const SnapshotsBoard: React.FC = () => {
                 </div>
               ) : (
                 <div style={{
+                  margin: 'auto',
                   color: 'var(--qs-text-muted)',
                   fontSize: 'var(--qs-font-sm)',
                 }}>
