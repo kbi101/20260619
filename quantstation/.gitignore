@@ -1,0 +1,46 @@
+# ═══════════════════════════════════════════════════════
+# QuantStation .gitignore
+# ═══════════════════════════════════════════════════════
+
+# ── Java / Gradle ──────────────────────────────────────
+*.class
+*.jar
+*.war
+*.ear
+*.log
+build/
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+out/
+
+# ── Node / pnpm ───────────────────────────────────────
+node_modules/
+dist/
+dist-electron/
+.vite/
+*.tsbuildinfo
+
+# ── Docker ─────────────────────────────────────────────
+# Don't commit volume data
+infra/questdb/data/
+infra/redis/data/
+
+# ── IDE ────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ── Environment & Secrets ─────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ── OS ─────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db

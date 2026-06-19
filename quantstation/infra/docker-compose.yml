@@ -1,0 +1,140 @@
+# ═══════════════════════════════════════════════════════════════
+# QuantStation — Docker Compose (OrbStack Optimized)
+# ═══════════════════════════════════════════════════════════════
+# Runtime: OrbStack (preferred) or Docker Desktop with VirtioFS
+# Network: Custom bridge with fixed subnet for deterministic IPs
+# ═══════════════════════════════════════════════════════════════
+
+services:
+  # ─── QuestDB: Time-Series Tick Plant ──────────────────────────
+  questdb:
+    image: questdb/questdb:latest
+    container_name: quantstation-questdb
+    hostname: questdb
+    ports:
+      - "9000:9000"   # Web Console + REST API
+      - "9009:9009"   # InfluxDB Line Protocol (tick ingestion)
+      - "8812:8812"   # PostgreSQL Wire Protocol (SQL queries)
+    volumes:
+      - questdb_data:/var/lib/questdb
+      - ./questdb/server.conf:/var/lib/questdb/conf/server.conf:ro
+      - ./questdb/schema-init.sql:/docker-entrypoint-initdb.d/schema-init.sql:ro
+    environment:
+      - QDB_CAIRO_MAX_UNCOMMITTED_ROWS=500000
+      - QDB_LINE_TCP_COMMITMENT_INTERVAL_FRACTION=0.5
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/exec?query=SELECT+1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - quantstation-net
+
+  # ─── Redis: In-Memory Live State ──────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: quantstation-redis
+    hostname: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - quantstation-net
+
+  # ─── IB Gateway: Headless Execution Gateway ──────────────────
+  ib-gateway:
+    image: gnzsnz/ib-gateway:latest
+    container_name: quantstation-ib-gateway
+    hostname: ib-gateway
+    ports:
+      - "4001:4001"   # Live trading API
+      - "4002:4002"   # Paper trading API
+      - "5990:5900"   # VNC (debug GUI, optional)
+    environment:
+      TWS_USERID: ${TWS_USERID:-}
+      TWS_PASSWORD: ${TWS_PASSWORD:-}
+      TRADING_MODE: ${TRADING_MODE:-paper}
+      TWS_ACCEPT_INCOMING: "true"
+      READ_ONLY_API: ${READ_ONLY_API:-false}
+      VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-quantstation}
+    volumes:
+      - ./ib-gateway/jts.ini:/root/Jts/jts.ini:ro
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 4002 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - quantstation-net
+
+  # ─── Core Engine: Spring Boot Backend ─────────────────────────
+  core-engine:
+    build:
+      context: ../core-engine
+      dockerfile: Dockerfile
+    container_name: quantstation-core-engine
+    hostname: core-engine
+    ports:
+      - "8080:8080"   # REST API / STOMP WS
+      - "8081:8081"   # Actuator
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-paper}
+      - ALPHA_VANTAGE_API_KEY=${ALPHA_VANTAGE_API_KEY}
+      - MASSIVE_API_KEY=${MASSIVE_API_KEY}
+      - TWS_USERID=${TWS_USERID}
+      - TWS_PASSWORD=${TWS_PASSWORD}
+      - REDIS_HOST=redis
+      - QUESTDB_HOST=questdb
+      - IBKR_HOST=ib-gateway
+    depends_on:
+      redis:
+        condition: service_healthy
+      questdb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - quantstation-net
+
+# ─── Named Volumes (OrbStack optimized) ──────────────────────
+volumes:
+  questdb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# ─── Network ─────────────────────────────────────────────────
+networks:
+  quantstation-net:
+    driver: bridge
