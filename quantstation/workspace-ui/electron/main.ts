@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, Menu } from 'electron'
 import path from 'path'
+import fs from 'fs'
 
 // Set application name override for development
 app.name = 'QuantStation'
@@ -9,6 +10,127 @@ app.disableHardwareAcceleration()
 
 let mainWindow: BrowserWindow | null = null
 let intelWindow: BrowserWindow | null = null
+let snapshotsWindow: BrowserWindow | null = null
+
+// Snapshot Directory & Watcher State
+let fileWatcher: fs.FSWatcher | null = null
+
+interface SnapshotMeta {
+  filename: string
+  category: string
+  timestamp: string // HHMMSS
+  mtime: number
+}
+
+function getTodayDir(): string {
+  const now = new Date()
+  const yyyy = now.getFullYear()
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  return path.join('/Users/kepingbi/Data/QuantEdge', `${yyyy}${mm}${dd}`)
+}
+
+async function getSnapshotsList(): Promise<SnapshotMeta[]> {
+  const dir = getTodayDir()
+  if (!fs.existsSync(dir)) {
+    return []
+  }
+  try {
+    const files = await fs.promises.readdir(dir)
+    const list: SnapshotMeta[] = []
+    for (const file of files) {
+      // Match format: category_HHMMSS.png or similar
+      const match = file.match(/^(.*)_(\d{6})\.(png|jpg|jpeg|gif)$/i)
+      if (match) {
+        const filePath = path.join(dir, file)
+        const stat = await fs.promises.stat(filePath)
+        list.push({
+          filename: file,
+          category: match[1],
+          timestamp: match[2],
+          mtime: stat.mtimeMs,
+        })
+      } else if (file.toLowerCase().endsWith('.png') || file.toLowerCase().endsWith('.jpg') || file.toLowerCase().endsWith('.jpeg')) {
+        const filePath = path.join(dir, file)
+        const stat = await fs.promises.stat(filePath)
+        const mtimeDate = new Date(stat.mtimeMs)
+        const hh = String(mtimeDate.getHours()).padStart(2, '0')
+        const mm = String(mtimeDate.getMinutes()).padStart(2, '0')
+        const ss = String(mtimeDate.getSeconds()).padStart(2, '0')
+        const nameWithoutExt = file.substring(0, file.lastIndexOf('.'))
+        list.push({
+          filename: file,
+          category: nameWithoutExt || 'other',
+          timestamp: `${hh}${mm}${ss}`,
+          mtime: stat.mtimeMs,
+        })
+      }
+    }
+    return list.sort((a, b) => a.mtime - b.mtime)
+  } catch (err) {
+    console.error('[Snapshots IPC] Failed to read directory:', err)
+    return []
+  }
+}
+
+function notifySnapshotsUpdated(): void {
+  getSnapshotsList().then((snapshots) => {
+    console.log(`[Snapshots Watcher] Broadcasting snapshot update to renderers: ${snapshots.length} items`)
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('snapshots:updated', snapshots)
+    }
+    if (intelWindow && !intelWindow.isDestroyed()) {
+      intelWindow.webContents.send('snapshots:updated', snapshots)
+    }
+    if (snapshotsWindow && !snapshotsWindow.isDestroyed()) {
+      snapshotsWindow.webContents.send('snapshots:updated', snapshots)
+    }
+  })
+}
+
+function startWatchingSnapshots(): void {
+  const dir = getTodayDir()
+  if (!fs.existsSync(dir)) {
+    console.log(`[Snapshots Watcher] Today's snapshot folder does not exist yet: ${dir}. Checking parent.`)
+    const parentDir = '/Users/kepingbi/Data/QuantEdge'
+    if (fs.existsSync(parentDir)) {
+      try {
+        fileWatcher = fs.watch(parentDir, (eventType, filename) => {
+          if (filename && filename === path.basename(dir)) {
+            console.log(`[Snapshots Watcher] Today's directory created: ${filename}. Starting folder watcher...`)
+            stopWatchingSnapshots()
+            startWatchingSnapshots()
+            notifySnapshotsUpdated()
+          }
+        })
+      } catch (err) {
+        console.error('[Snapshots Watcher] Failed to watch parent folder:', err)
+      }
+    }
+    // Fallback directory creation checker
+    setTimeout(() => {
+      if (!fileWatcher) startWatchingSnapshots()
+    }, 10000)
+    return
+  }
+
+  try {
+    console.log(`[Snapshots Watcher] Starting watcher on: ${dir}`)
+    fileWatcher = fs.watch(dir, (eventType, filename) => {
+      console.log(`[Snapshots Watcher] Folder change event: ${eventType} for file: ${filename}`)
+      notifySnapshotsUpdated()
+    })
+  } catch (err) {
+    console.error(`[Snapshots Watcher] Failed to watch directory ${dir}:`, err)
+  }
+}
+
+function stopWatchingSnapshots(): void {
+  if (fileWatcher) {
+    fileWatcher.close()
+    fileWatcher = null
+  }
+}
 
 function registerDevShortcuts(win: BrowserWindow): void {
   win.webContents.on('before-input-event', (event, input) => {
@@ -116,6 +238,45 @@ function createIntelWindow(): void {
   })
 }
 
+function createSnapshotsWindow(): void {
+  snapshotsWindow = new BrowserWindow({
+    width: 1200,
+    height: 900,
+    minWidth: 800,
+    minHeight: 600,
+    title: 'Snapshots Board',
+    backgroundColor: '#0a0a0f',
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 16, y: 16 },
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  })
+
+  // Lock title to prevent index.html overriding it
+  snapshotsWindow.on('page-title-updated', (event) => {
+    event.preventDefault()
+  })
+
+  // Load the renderer pointing to hash route
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL || process.env.ELECTRON_RENDERER_URL
+  if (devServerUrl) {
+    snapshotsWindow.loadURL(`${devServerUrl}#/snapshots`)
+  } else {
+    snapshotsWindow.loadFile(path.join(__dirname, '../dist/index.html'), { hash: '/snapshots' })
+  }
+
+  forwardConsole(snapshotsWindow, 'Snapshots')
+  registerDevShortcuts(snapshotsWindow)
+
+  snapshotsWindow.on('closed', () => {
+    snapshotsWindow = null
+  })
+}
+
 // Window opener helpers
 function showWorkspaceWindow(): void {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -133,6 +294,15 @@ function showIntelWindow(): void {
     intelWindow.focus()
   } else {
     createIntelWindow()
+  }
+}
+
+function showSnapshotsWindow(): void {
+  if (snapshotsWindow && !snapshotsWindow.isDestroyed()) {
+    snapshotsWindow.show()
+    snapshotsWindow.focus()
+  } else {
+    createSnapshotsWindow()
   }
 }
 
@@ -175,6 +345,30 @@ ipcMain.on('window:open-workspace', () => {
   showWorkspaceWindow()
 })
 
+ipcMain.on('window:open-snapshots', () => {
+  console.log('[IPC Router] Opening/Focusing Snapshots Board...')
+  showSnapshotsWindow()
+})
+
+ipcMain.handle('snapshots:list', async () => {
+  return await getSnapshotsList()
+})
+
+ipcMain.handle('snapshots:read', async (event, filename: string) => {
+  if (path.basename(filename) !== filename) {
+    throw new Error('Invalid filename path traversal query')
+  }
+  const dir = getTodayDir()
+  const filePath = path.join(dir, filename)
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filename}`)
+  }
+  const data = await fs.promises.readFile(filePath)
+  const ext = path.extname(filename).substring(1).toLowerCase()
+  const mime = ext === 'jpg' ? 'jpeg' : (ext || 'png')
+  return `data:image/${mime};base64,${data.toString('base64')}`
+})
+
 ipcMain.handle('app:version', () => {
   return app.getVersion()
 })
@@ -209,6 +403,11 @@ function createApplicationMenu(): void {
           accelerator: 'CmdOrCtrl+2',
           click: () => showIntelWindow()
         },
+        {
+          label: 'Show Snapshots Board',
+          accelerator: 'CmdOrCtrl+3',
+          click: () => showSnapshotsWindow()
+        },
         { type: 'separator' },
         { role: 'reload' },
         { role: 'forceReload' },
@@ -234,6 +433,8 @@ app.whenReady().then(() => {
   createApplicationMenu()
   createWindow()
   createIntelWindow()
+  createSnapshotsWindow()
+  startWatchingSnapshots()
 })
 
 app.on('window-all-closed', () => {
@@ -243,4 +444,5 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (mainWindow === null) createWindow()
   if (intelWindow === null) createIntelWindow()
+  if (snapshotsWindow === null) createSnapshotsWindow()
 })

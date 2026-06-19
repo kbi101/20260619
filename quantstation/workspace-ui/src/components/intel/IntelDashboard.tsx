@@ -33,10 +33,10 @@ export const IntelDashboard: React.FC = () => {
             color: 'var(--qs-text-secondary)',
             padding: '4px 10px',
             cursor: 'pointer',
-            WebkitAppRegion: 'no-drag' as any,
+            WebkitAppRegion: 'no-drag',
             outline: 'none',
             marginRight: '12px',
-          }}
+          } as any}
         >
           Workspace
         </button>

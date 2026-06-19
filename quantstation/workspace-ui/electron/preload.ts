@@ -31,9 +31,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Window openers (to reopen closed windows dynamically)
   openIntelWindow: () => ipcRenderer.send('window:open-intel'),
   openWorkspaceWindow: () => ipcRenderer.send('window:open-workspace'),
+  openSnapshotsWindow: () => ipcRenderer.send('window:open-snapshots'),
+
+  // Snapshots APIs
+  getSnapshots: () => ipcRenderer.invoke('snapshots:list'),
+  readSnapshot: (filename: string) => ipcRenderer.invoke('snapshots:read', filename),
+  onSnapshotsUpdated: (callback: (snapshots: any[]) => void) => {
+    const listener = (_event: any, snapshots: any[]) => callback(snapshots)
+    ipcRenderer.on('snapshots:updated', listener)
+    return () => {
+      ipcRenderer.removeListener('snapshots:updated', listener)
+    }
+  },
 })
 
 // Type declaration for the renderer
+export interface SnapshotMeta {
+  filename: string
+  category: string
+  timestamp: string // HHMMSS
+  mtime: number
+}
+
 declare global {
   interface Window {
     electronAPI: {
@@ -46,6 +65,10 @@ declare global {
       onSymbolUpdate: (callback: (symbol: string) => void) => () => void
       openIntelWindow: () => void
       openWorkspaceWindow: () => void
+      openSnapshotsWindow: () => void
+      getSnapshots: () => Promise<SnapshotMeta[]>
+      readSnapshot: (filename: string) => Promise<string>
+      onSnapshotsUpdated: (callback: (snapshots: SnapshotMeta[]) => void) => () => void
     }
   }
 }

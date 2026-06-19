@@ -7,6 +7,7 @@ import { OrderEntry } from './components/execution/OrderEntry'
 import { OrderBlotter } from './components/execution/OrderBlotter'
 import { PnlTicker } from './components/pnl/PnlTicker'
 import { IntelDashboard } from './components/intel/IntelDashboard'
+import { SnapshotsBoard } from './components/snapshots/SnapshotsBoard'
 
 /**
  * QuantStation — Main Workspace Grid Board Component
@@ -57,8 +58,8 @@ const Workspace: React.FC = () => {
             padding: '4px 8px',
             width: '120px',
             outline: 'none',
-            WebkitAppRegion: 'no-drag' as any,
-          }}
+            WebkitAppRegion: 'no-drag',
+          } as any}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               const val = (e.target as HTMLInputElement).value.toUpperCase()
@@ -77,11 +78,28 @@ const Workspace: React.FC = () => {
             color: 'var(--qs-text-secondary)',
             padding: '4px 10px',
             cursor: 'pointer',
-            WebkitAppRegion: 'no-drag' as any,
+            WebkitAppRegion: 'no-drag',
             outline: 'none',
-          }}
+          } as any}
         >
           Intel Dashboard
+        </button>
+        <button
+          onClick={() => window.electronAPI?.openSnapshotsWindow()}
+          style={{
+            fontFamily: 'var(--qs-font-sans)',
+            fontSize: 'var(--qs-font-xs)',
+            background: 'var(--qs-bg-primary)',
+            border: '1px solid var(--qs-border)',
+            borderRadius: 'var(--qs-radius-sm)',
+            color: 'var(--qs-text-secondary)',
+            padding: '4px 10px',
+            cursor: 'pointer',
+            WebkitAppRegion: 'no-drag',
+            outline: 'none',
+          } as any}
+        >
+          Snapshots Board
         </button>
         <span className="titlebar__status" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span className={`pulse-dot ${connected ? 'pulse-dot--active' : 'pulse-dot--inactive'}`} />
@@ -163,6 +181,10 @@ const App: React.FC = () => {
 
   if (route.startsWith('#/intel')) {
     return <IntelDashboard />
+  }
+
+  if (route.startsWith('#/snapshots')) {
+    return <SnapshotsBoard />
   }
 
   return <Workspace />
