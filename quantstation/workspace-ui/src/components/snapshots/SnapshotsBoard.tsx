@@ -17,6 +17,14 @@ export const SnapshotsBoard: React.FC = () => {
   const [autoFollow, setAutoFollow] = useState(true)
   const [fitMode, setFitMode] = useState<'fit' | 'fill' | 'original'>('fit')
   const [zoomLevel, setZoomLevel] = useState(1)
+  const [naturalWidth, setNaturalWidth] = useState<number>(0)
+  const [naturalHeight, setNaturalHeight] = useState<number>(0)
+
+  // Reset natural size when snapshot selection changes
+  useEffect(() => {
+    setNaturalWidth(0)
+    setNaturalHeight(0)
+  }, [selectedSnapshot])
 
   // 1. Mount effect: Fetch snapshots and subscribe to directory changes
   useEffect(() => {
@@ -513,31 +521,45 @@ export const SnapshotsBoard: React.FC = () => {
                   Loading high-res image...
                 </div>
               ) : imgData ? (
-                <div style={{
-                  width: fitMode === 'fit' ? '100%' : fitMode === 'fill' ? '100%' : 'auto',
-                  height: fitMode === 'fit' ? '100%' : fitMode === 'fill' ? '100%' : 'auto',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: 'auto',
-                  transform: `scale(${zoomLevel})`,
-                  transformOrigin: 'center center',
-                  transition: 'transform 150ms ease-out',
-                }}>
-                  <img
-                    src={imgData}
-                    alt={selectedSnapshot?.filename}
-                    style={{
-                      maxWidth: fitMode === 'fit' ? '100%' : fitMode === 'original' ? 'none' : '100%',
-                      maxHeight: fitMode === 'fit' ? '100%' : fitMode === 'original' ? 'none' : '100%',
-                      objectFit: fitMode === 'fill' ? 'cover' : 'contain',
-                      borderRadius: 'var(--qs-radius-sm)',
-                      boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6)',
-                      border: '1px solid var(--qs-border)',
-                      userSelect: 'none',
-                    }}
-                  />
-                </div>
+                <img
+                  src={imgData}
+                  alt={selectedSnapshot?.filename}
+                  onLoad={(e) => {
+                    const img = e.currentTarget
+                    setNaturalWidth(img.naturalWidth)
+                    setNaturalHeight(img.naturalHeight)
+                  }}
+                  style={{
+                    // Centering & layout overflow support (margin: auto)
+                    margin: 'auto',
+                    userSelect: 'none',
+                    borderRadius: 'var(--qs-radius-sm)',
+                    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6)',
+                    border: '1px solid var(--qs-border)',
+                    
+                    // Width & height layout parameters
+                    width: fitMode === 'fill'
+                      ? `calc(${100 * zoomLevel}% - 32px)` 
+                      : fitMode === 'original' && naturalWidth
+                        ? `${naturalWidth * zoomLevel}px`
+                        : 'auto',
+                    height: fitMode === 'fill'
+                      ? `calc(${100 * zoomLevel}% - 32px)`
+                      : fitMode === 'original' && naturalHeight
+                        ? `${naturalHeight * zoomLevel}px`
+                        : 'auto',
+
+                    // Bounds boundaries constraints
+                    maxWidth: fitMode === 'fit' ? `calc(${100 * zoomLevel}% - 32px)` : 'none',
+                    maxHeight: fitMode === 'fit' ? `calc(${100 * zoomLevel}% - 32px)` : 'none',
+                    
+                    // Fitting method
+                    objectFit: fitMode === 'fill' ? 'cover' : 'contain',
+                    
+                    // Smooth transition on zoom changes
+                    transition: 'width 150ms ease-out, height 150ms ease-out, max-width 150ms ease-out, max-height 150ms ease-out',
+                  }}
+                />
               ) : (
                 <div style={{
                   margin: 'auto',
