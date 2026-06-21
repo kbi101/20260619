@@ -20,46 +20,309 @@ export const SnapshotsBoard: React.FC = () => {
   const [naturalWidth, setNaturalWidth] = useState<number>(0)
   const [naturalHeight, setNaturalHeight] = useState<number>(0)
 
+  // Save, Drag-and-drop, Clipboard Paste States
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
+  const [pendingImgData, setPendingImgData] = useState<string | null>(null)
+  const [modalCategory, setModalCategory] = useState('')
+  const [modalFilename, setModalFilename] = useState('')
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  // availableDates state
+  const [availableDates, setAvailableDates] = useState<string[]>([])
+  const [selectedDate, setSelectedDate] = useState<string>('')
+  const [showWeek, setShowWeek] = useState(false)
+
+  const getTodayStr = () => {
+    const now = new Date()
+    const yyyy = now.getFullYear()
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    return `${yyyy}${mm}${dd}`
+  }
+
+  const triggerSaveModal = (base64Data: string, originalName?: string) => {
+    setPendingImgData(base64Data)
+    const existingCategories = Array.from(new Set(snapshots.map(s => s.category)))
+    setModalCategory(activeCategory || (existingCategories[0] || 'misc'))
+
+    const now = new Date()
+    const hh = String(now.getHours()).padStart(2, '0')
+    const mm = String(now.getMinutes()).padStart(2, '0')
+    const ss = String(now.getSeconds()).padStart(2, '0')
+    
+    let targetFilename = `snapshot_${hh}${mm}${ss}.png`
+    if (originalName) {
+      const match = originalName.match(/^(.*)_(\d{6})\.(png|jpg|jpeg|gif)$/i)
+      if (match) {
+        targetFilename = `${match[1].replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()}_${match[2]}.png`
+      } else {
+        const cleanName = originalName.substring(0, originalName.lastIndexOf('.')).replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()
+        targetFilename = `${cleanName || 'snapshot'}_${hh}${mm}${ss}.png`
+      }
+    } else {
+      targetFilename = `${(activeCategory || 'copied').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()}_${hh}${mm}${ss}.png`
+    }
+
+    setModalFilename(targetFilename)
+    setIsSaveModalOpen(true)
+  }
+
+  const handleModalCategoryChange = (newCategory: string) => {
+    setModalCategory(newCategory)
+    const cleanCat = newCategory.trim().replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase() || 'snapshot'
+    const timeMatch = modalFilename.match(/_(\d{6})\.png$/i)
+    if (timeMatch) {
+      setModalFilename(`${cleanCat}_${timeMatch[1]}.png`)
+    } else {
+      const now = new Date()
+      const hh = String(now.getHours()).padStart(2, '0')
+      const mm = String(now.getMinutes()).padStart(2, '0')
+      const ss = String(now.getSeconds()).padStart(2, '0')
+      setModalFilename(`${cleanCat}_${hh}${mm}${ss}.png`)
+    }
+  }
+
+  const handleSaveSnapshot = async () => {
+    if (!pendingImgData || !modalCategory.trim()) return
+    try {
+      setSaving(true)
+      const cleanCat = modalCategory.trim().replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()
+      
+      let finalName = modalFilename.trim()
+      if (!finalName.toLowerCase().endsWith('.png')) {
+        finalName = finalName.replace(/\.[^/.]+$/, "") + '.png'
+      }
+      
+      if (!finalName.startsWith(cleanCat + '_')) {
+        const timeMatch = finalName.match(/_(\d{6})\.png$/i)
+        if (timeMatch) {
+          finalName = `${cleanCat}_${timeMatch[1]}.png`
+        } else {
+          const now = new Date()
+          const hh = String(now.getHours()).padStart(2, '0')
+          const mm = String(now.getMinutes()).padStart(2, '0')
+          const ss = String(now.getSeconds()).padStart(2, '0')
+          finalName = `${cleanCat}_${hh}${mm}${ss}.png`
+        }
+      }
+
+      await window.electronAPI.saveSnapshot({
+        category: cleanCat,
+        filename: finalName,
+        base64Data: pendingImgData,
+      })
+
+      // Switch to today's view if currently looking at a past day
+      const today = getTodayStr()
+      if (selectedDate !== today) {
+        const dates = await window.electronAPI.getAvailableDates()
+        setAvailableDates(dates)
+        setSelectedDate(today)
+      }
+
+      setActiveCategory(cleanCat)
+      setAutoFollow(true)
+      setIsSaveModalOpen(false)
+      setPendingImgData(null)
+    } catch (err) {
+      console.error('[SnapshotsBoard] Failed to save snapshot:', err)
+      alert(`Failed to save snapshot: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      const file = files[0]
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            triggerSaveModal(event.target.result as string, file.name)
+          }
+        }
+        reader.readAsDataURL(file)
+      } else {
+        alert('Only image files are supported (PNG, JPG, JPEG, GIF)')
+      }
+    }
+  }
+
   // Reset natural size when snapshot selection changes
   useEffect(() => {
     setNaturalWidth(0)
     setNaturalHeight(0)
   }, [selectedSnapshot])
 
-  // 1. Mount effect: Fetch snapshots and subscribe to directory changes
+  // Global clipboard paste event listener
   useEffect(() => {
-    let active = true
+    const handlePaste = async (e: ClipboardEvent) => {
+      const activeEl = document.activeElement
+      if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        return
+      }
 
-    const fetchSnapshots = async () => {
+      // 1. Try native Electron clipboard reading (robust, handles screenshots & copied files)
       try {
-        setLoading(true)
-        const list = await window.electronAPI.getSnapshots()
-        if (active) {
-          console.log(`[SnapshotsBoard] Loaded ${list.length} snapshots on mount.`)
-          setSnapshots(list)
+        const base64Data = await window.electronAPI.readClipboardImage()
+        if (base64Data) {
+          triggerSaveModal(base64Data)
+          e.preventDefault()
+          return
         }
       } catch (err) {
-        console.error('[SnapshotsBoard] Failed to load snapshots:', err)
+        console.error('[SnapshotsBoard] Failed to read native clipboard:', err)
+      }
+
+      // 2. Standard web clipboard parsing fallback
+      const items = e.clipboardData?.items
+      if (!items) return
+
+      for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+          const file = item.getAsFile()
+          if (file) {
+            const reader = new FileReader()
+            reader.onload = (event) => {
+              if (event.target?.result) {
+                triggerSaveModal(event.target.result as string)
+              }
+            }
+            reader.readAsDataURL(file)
+          }
+          e.preventDefault()
+          break
+        }
+      }
+    }
+
+    window.addEventListener('paste', handlePaste)
+    return () => {
+      window.removeEventListener('paste', handlePaste)
+    }
+  }, [activeCategory, snapshots])
+
+  // 1. Fetch available dates on mount
+  useEffect(() => {
+    let active = true
+    const fetchDates = async () => {
+      try {
+        const dates = await window.electronAPI.getAvailableDates()
+        if (active) {
+          setAvailableDates(dates)
+          const today = getTodayStr()
+          setSelectedDate(dates.includes(today) ? today : (dates[0] || today))
+        }
+      } catch (err) {
+        console.error('[SnapshotsBoard] Failed to fetch available dates:', err)
+        const today = getTodayStr()
+        setAvailableDates([today])
+        setSelectedDate(today)
+      }
+    }
+    fetchDates()
+    return () => {
+      active = false
+    }
+  }, [])
+
+  // 2. Fetch snapshots when selectedDate changes or showWeek changes
+  useEffect(() => {
+    if (!selectedDate) return
+    let active = true
+
+    const fetchSnapshotsForDate = async () => {
+      try {
+        setLoading(true)
+        
+        let datesToFetch = [selectedDate]
+        if (showWeek) {
+          const startIndex = availableDates.indexOf(selectedDate)
+          const targetIndex = startIndex !== -1 ? startIndex : 0
+          datesToFetch = availableDates.slice(targetIndex, targetIndex + 7)
+        }
+
+        const promises = datesToFetch.map(async (d) => {
+          try {
+            return await window.electronAPI.getSnapshots(d)
+          } catch (err) {
+            console.error(`[SnapshotsBoard] Failed to fetch snapshots for date ${d}:`, err)
+            return []
+          }
+        })
+
+        const results = await Promise.all(promises)
+        
+        if (active) {
+          const mergedList = results.flat().sort((a, b) => a.mtime - b.mtime)
+          console.log(`[SnapshotsBoard] Loaded ${mergedList.length} snapshots for dates: ${datesToFetch.join(', ')}.`)
+          setSnapshots(mergedList)
+        }
+      } catch (err) {
+        console.error(`[SnapshotsBoard] Failed to load snapshots:`, err)
       } finally {
         if (active) setLoading(false)
       }
     }
 
-    fetchSnapshots()
-
-    // Subscribe to IPC file-watcher updates
-    const unsubscribe = window.electronAPI.onSnapshotsUpdated((updatedList) => {
-      console.log(`[SnapshotsBoard] Folder update: received ${updatedList.length} snapshots.`)
-      setSnapshots(updatedList)
-    })
+    fetchSnapshotsForDate()
 
     return () => {
       active = false
+    }
+  }, [selectedDate, showWeek, availableDates])
+
+  // 3. Listen to file-watcher updates (only updates if today's date is currently active or within week range)
+  useEffect(() => {
+    const unsubscribe = window.electronAPI.onSnapshotsUpdated(async (updatedList) => {
+      const today = getTodayStr()
+      if (selectedDate === today || showWeek) {
+        console.log(`[SnapshotsBoard] Folder update detected. Reloading...`)
+        const dates = await window.electronAPI.getAvailableDates()
+        setAvailableDates(dates)
+
+        let datesToFetch = [selectedDate]
+        if (showWeek) {
+          const startIndex = dates.indexOf(selectedDate)
+          const targetIndex = startIndex !== -1 ? startIndex : 0
+          datesToFetch = dates.slice(targetIndex, targetIndex + 7)
+        }
+
+        const promises = datesToFetch.map(async (d) => {
+          try {
+            return await window.electronAPI.getSnapshots(d)
+          } catch (err) {
+            return []
+          }
+        })
+        const results = await Promise.all(promises)
+        const mergedList = results.flat().sort((a, b) => a.mtime - b.mtime)
+        setSnapshots(mergedList)
+      }
+    })
+
+    return () => {
       unsubscribe()
     }
-  }, [])
+  }, [selectedDate, showWeek])
 
-  // 2. Sync selection state when snapshots list, active category, or autoFollow toggles update
+  // 4. Sync selection state when snapshots list, active category, or autoFollow toggles update
   useEffect(() => {
     if (snapshots.length === 0) {
       setActiveCategory('')
@@ -67,7 +330,7 @@ export const SnapshotsBoard: React.FC = () => {
       return
     }
 
-    // 2a. Determine active category: keep current if still valid, otherwise fall back to first
+    // Determine active category: keep current if still valid, otherwise fall back to first
     const currentCategoryValid = activeCategory && snapshots.some(s => s.category === activeCategory)
     const targetCategory = currentCategoryValid ? activeCategory : snapshots[0].category
 
@@ -75,7 +338,7 @@ export const SnapshotsBoard: React.FC = () => {
       setActiveCategory(targetCategory)
     }
 
-    // 2b. Determine selected snapshot within the category
+    // Determine selected snapshot within the category
     const categorySnapshots = snapshots.filter(s => s.category === targetCategory)
     if (categorySnapshots.length > 0) {
       const latestOfCategory = categorySnapshots[categorySnapshots.length - 1]
@@ -97,7 +360,7 @@ export const SnapshotsBoard: React.FC = () => {
     }
   }, [snapshots, autoFollow, activeCategory, selectedSnapshot?.filename])
 
-  // 2. Fetch Selected Image Content (Base64)
+  // 5. Fetch Selected Image Content (Base64)
   useEffect(() => {
     if (!selectedSnapshot) {
       setImgData(null)
@@ -108,7 +371,7 @@ export const SnapshotsBoard: React.FC = () => {
     const loadImage = async () => {
       try {
         setImgLoading(true)
-        const base64Data = await window.electronAPI.readSnapshot(selectedSnapshot.filename)
+        const base64Data = await window.electronAPI.readSnapshot(selectedSnapshot.filename, selectedDate)
         if (active) {
           setImgData(base64Data)
           setZoomLevel(1) // Reset zoom on image change
@@ -126,7 +389,28 @@ export const SnapshotsBoard: React.FC = () => {
     return () => {
       active = false
     }
-  }, [selectedSnapshot])
+  }, [selectedSnapshot, selectedDate])
+
+  // Format date option labels for historic select UI
+  const formatDateLabel = (dateStr: string) => {
+    if (!dateStr || dateStr.length !== 8) return dateStr
+    const yyyy = dateStr.substring(0, 4)
+    const mm = dateStr.substring(4, 6)
+    const dd = dateStr.substring(6, 8)
+    
+    const dateObj = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd))
+    const today = new Date()
+    const isToday = dateObj.toDateString() === today.toDateString()
+    
+    const yesterday = new Date()
+    yesterday.setDate(today.getDate() - 1)
+    const isYesterday = dateObj.toDateString() === yesterday.toDateString()
+
+    const dateFormatted = `${yyyy}-${mm}-${dd}`
+    if (isToday) return `${dateFormatted} (Today)`
+    if (isYesterday) return `${dateFormatted} (Yesterday)`
+    return dateFormatted
+  }
 
   // Format filename prefix to category human-readable title
   const formatCategory = (cat: string) => {
@@ -159,15 +443,60 @@ export const SnapshotsBoard: React.FC = () => {
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100vh',
-      background: 'var(--qs-bg-primary)',
-      color: 'var(--qs-text-primary)',
-      fontFamily: 'var(--qs-font-sans)',
-      overflow: 'hidden',
-    }}>
+    <div 
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        background: 'var(--qs-bg-primary)',
+        color: 'var(--qs-text-primary)',
+        fontFamily: 'var(--qs-font-sans)',
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      {/* Drag & Drop Visual Overlay */}
+      {isDragOver && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(10, 10, 15, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          border: '2px dashed var(--qs-blue)',
+          margin: '16px',
+          borderRadius: 'var(--qs-radius-lg)',
+          transition: 'all 0.2s ease-in-out',
+          pointerEvents: 'none',
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📥</div>
+          <div style={{
+            fontSize: 'var(--qs-font-lg)',
+            fontWeight: 600,
+            color: 'var(--qs-text-primary)',
+            marginBottom: '8px',
+          }}>
+            Drop Image Here
+          </div>
+          <div style={{
+            fontSize: 'var(--qs-font-sm)',
+            color: 'var(--qs-text-muted)',
+          }}>
+            Release to categorize and save snapshot
+          </div>
+        </div>
+      )}
+
       {/* ── Custom Title Bar ──────────────────────────────── */}
       <div className="titlebar" style={{ flexShrink: 0 }}>
         <span className="titlebar__title">Snapshots Board</span>
@@ -289,6 +618,75 @@ export const SnapshotsBoard: React.FC = () => {
           }}>
             <span className="pulse-dot pulse-dot--active" /> Watching directory for new updates...
           </div>
+
+          <div style={{ marginTop: '20px', display: 'flex', gap: '12px', zIndex: 5 }}>
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'var(--qs-blue)',
+              color: '#ffffff',
+              padding: '8px 16px',
+              borderRadius: 'var(--qs-radius-md)',
+              fontSize: 'var(--qs-font-sm)',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'background 0.2s',
+            }}
+            onMouseOver={(e) => e.currentTarget.style.background = 'var(--qs-blue-hover)'}
+            onMouseOut={(e) => e.currentTarget.style.background = 'var(--qs-blue)'}
+            >
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    const reader = new FileReader()
+                    reader.onload = (event) => {
+                      if (event.target?.result) {
+                        triggerSaveModal(event.target.result as string, file.name)
+                      }
+                    }
+                    reader.readAsDataURL(file)
+                  }
+                  e.target.value = ''
+                }}
+                style={{ display: 'none' }}
+              />
+              📁 Upload Snapshot
+            </label>
+            <button 
+              onClick={async () => {
+                try {
+                  const base64Data = await window.electronAPI.readClipboardImage()
+                  if (base64Data) {
+                    triggerSaveModal(base64Data)
+                  } else {
+                    alert('No image or image file found on the clipboard. Copy an image or screenshot file first.')
+                  }
+                } catch (err) {
+                  alert(`Failed to paste clipboard: ${err instanceof Error ? err.message : String(err)}`)
+                }
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: 'var(--qs-bg-tertiary)',
+                color: 'var(--qs-text-secondary)',
+                border: '1px solid var(--qs-border)',
+                padding: '8px 16px',
+                borderRadius: 'var(--qs-radius-md)',
+                fontSize: 'var(--qs-font-sm)',
+                cursor: 'pointer',
+                transition: 'background var(--qs-transition-fast)',
+                outline: 'none',
+              }}
+              className="titlebar-btn"
+            >
+              📋 Paste Clipboard (Cmd+V)
+            </button>
+          </div>
         </div>
       ) : (
         <div style={{
@@ -306,8 +704,127 @@ export const SnapshotsBoard: React.FC = () => {
             flexDirection: 'column',
             overflow: 'hidden',
           }}>
-            <div className="panel__header" style={{ borderBottom: '1px solid var(--qs-border)' }}>
+            <div className="panel__header" style={{ 
+              borderBottom: '1px solid var(--qs-border)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingRight: '8px'
+            }}>
               <span className="panel__title">Categories</span>
+              
+              <label style={{
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '24px',
+                height: '24px',
+                borderRadius: 'var(--qs-radius-sm)',
+                background: 'var(--qs-bg-tertiary)',
+                border: '1px solid var(--qs-border)',
+                color: 'var(--qs-text-secondary)',
+                transition: 'all var(--qs-transition-fast)',
+                fontSize: '14px',
+              }}
+              className="titlebar-btn"
+              title="Upload Image File"
+              >
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const reader = new FileReader()
+                      reader.onload = (event) => {
+                        if (event.target?.result) {
+                          triggerSaveModal(event.target.result as string, file.name)
+                        }
+                      }
+                      reader.readAsDataURL(file)
+                    }
+                    e.target.value = ''
+                  }} 
+                  style={{ display: 'none' }} 
+                />
+                +
+              </label>
+            </div>
+
+            {/* Date Selector Dropdown */}
+            <div style={{
+              padding: '8px 12px',
+              borderBottom: '1px solid var(--qs-border)',
+              background: 'var(--qs-bg-tertiary)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '6px',
+            }}>
+              <label style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                color: 'var(--qs-text-muted)',
+                letterSpacing: '0.05em',
+              }}>
+                Select Date
+              </label>
+              <select
+                value={selectedDate}
+                onChange={(e) => {
+                  setSelectedDate(e.target.value)
+                  setZoomLevel(1)
+                  setAutoFollow(true)
+                }}
+                disabled={showWeek}
+                style={{
+                  background: 'var(--qs-bg-primary)',
+                  border: '1px solid var(--qs-border)',
+                  borderRadius: 'var(--qs-radius-sm)',
+                  color: showWeek ? 'var(--qs-text-muted)' : 'var(--qs-text-primary)',
+                  padding: '6px 8px',
+                  fontSize: 'var(--qs-font-xs)',
+                  fontFamily: 'var(--qs-font-mono)',
+                  outline: 'none',
+                  cursor: showWeek ? 'not-allowed' : 'pointer',
+                  width: '100%',
+                  opacity: showWeek ? 0.6 : 1,
+                }}
+              >
+                {availableDates.map((dateVal) => (
+                  <option key={dateVal} value={dateVal}>
+                    {formatDateLabel(dateVal)}
+                  </option>
+                ))}
+              </select>
+
+              {/* Show Week Checkbox Toggle */}
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '11px',
+                color: 'var(--qs-text-secondary)',
+                cursor: 'pointer',
+                userSelect: 'none',
+                marginTop: '4px',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={showWeek}
+                  onChange={(e) => {
+                    setShowWeek(e.target.checked)
+                    setZoomLevel(1)
+                    setAutoFollow(true)
+                  }}
+                  style={{
+                    cursor: 'pointer',
+                    accentColor: 'var(--qs-blue)',
+                  }}
+                />
+                Show entire week (Last 7 days)
+              </label>
             </div>
             
             <div style={{
@@ -412,6 +929,34 @@ export const SnapshotsBoard: React.FC = () => {
               {/* View options */}
               {imgData && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {selectedDate !== getTodayStr() && (
+                    <button
+                      onClick={async () => {
+                        if (!imgData || !selectedSnapshot) return
+                        triggerSaveModal(imgData, selectedSnapshot.filename)
+                      }}
+                      style={{
+                        background: 'var(--qs-blue)',
+                        border: 'none',
+                        color: '#ffffff',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        padding: '4px 10px',
+                        borderRadius: 'var(--qs-radius-sm)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        outline: 'none',
+                        marginRight: '8px',
+                        transition: 'background var(--qs-transition-fast)',
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = 'var(--qs-blue-hover)'}
+                      onMouseOut={(e) => e.currentTarget.style.background = 'var(--qs-blue)'}
+                    >
+                      📋 Copy to Today
+                    </button>
+                  )}
                   {/* Zoom Controls */}
                   <div style={{
                     display: 'flex',
@@ -714,6 +1259,21 @@ export const SnapshotsBoard: React.FC = () => {
                             color: isActive ? 'var(--qs-text-primary)' : 'var(--qs-text-secondary)',
                           }}>
                             {formatTime(item.timestamp)}
+                            {showWeek && item.date && (
+                              <span style={{
+                                fontSize: '10px',
+                                color: 'var(--qs-text-muted)',
+                                marginLeft: '6px',
+                                background: 'var(--qs-bg-secondary)',
+                                padding: '1px 4px',
+                                borderRadius: '3px',
+                                border: '1px solid var(--qs-border)',
+                                display: 'inline-block',
+                                verticalAlign: 'middle',
+                              }}>
+                                {item.date.substring(4, 6)}/{item.date.substring(6, 8)}
+                              </span>
+                            )}
                           </span>
 
                           {isLatest && (
@@ -750,6 +1310,197 @@ export const SnapshotsBoard: React.FC = () => {
                   )
                 })}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Save / Categorization Modal ──────────────────── */}
+      {isSaveModalOpen && pendingImgData && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(10, 10, 15, 0.8)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+        }}>
+          <div style={{
+            background: 'var(--qs-bg-secondary)',
+            border: '1px solid var(--qs-border)',
+            borderRadius: 'var(--qs-radius-lg)',
+            width: '450px',
+            maxWidth: '95%',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.6)',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '16px 20px',
+              borderBottom: '1px solid var(--qs-border)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'var(--qs-bg-tertiary)',
+            }}>
+              <span style={{ fontWeight: 600, fontSize: 'var(--qs-font-md)', color: 'var(--qs-text-primary)' }}>
+                Categorize Snapshot
+              </span>
+              <button
+                onClick={() => {
+                  setIsSaveModalOpen(false)
+                  setPendingImgData(null)
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--qs-text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  outline: 'none',
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Image Preview Thumbnail */}
+              <div style={{
+                width: '100%',
+                height: '140px',
+                background: '#040406',
+                border: '1px solid var(--qs-border)',
+                borderRadius: 'var(--qs-radius-md)',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <img
+                  src={pendingImgData}
+                  alt="Preview"
+                  style={{
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    objectFit: 'contain',
+                  }}
+                />
+              </div>
+
+              {/* Category Input (Autocomplete) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: 'var(--qs-font-xs)', fontWeight: 600, color: 'var(--qs-text-secondary)' }}>
+                  Category
+                </label>
+                <input
+                  type="text"
+                  list="modal-categories"
+                  value={modalCategory}
+                  onChange={(e) => handleModalCategoryChange(e.target.value)}
+                  placeholder="e.g. charts, orders, general"
+                  style={{
+                    background: 'var(--qs-bg-primary)',
+                    border: '1px solid var(--qs-border)',
+                    borderRadius: 'var(--qs-radius-sm)',
+                    color: 'var(--qs-text-primary)',
+                    padding: '8px 12px',
+                    fontSize: 'var(--qs-font-sm)',
+                    outline: 'none',
+                    fontFamily: 'var(--qs-font-sans)',
+                  }}
+                />
+                <datalist id="modal-categories">
+                  {categories.map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              </div>
+
+              {/* Filename Input */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: 'var(--qs-font-xs)', fontWeight: 600, color: 'var(--qs-text-secondary)' }}>
+                  Filename
+                </label>
+                <input
+                  type="text"
+                  value={modalFilename}
+                  onChange={(e) => setModalFilename(e.target.value)}
+                  placeholder="filename.png"
+                  style={{
+                    background: 'var(--qs-bg-primary)',
+                    border: '1px solid var(--qs-border)',
+                    borderRadius: 'var(--qs-radius-sm)',
+                    color: 'var(--qs-text-primary)',
+                    padding: '8px 12px',
+                    fontSize: 'var(--qs-font-mono)',
+                    outline: 'none',
+                  }}
+                />
+                <span style={{ fontSize: '10px', color: 'var(--qs-text-muted)' }}>
+                  Saved as a PNG file inside the today's snapshot folder.
+                </span>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: '16px 20px',
+              borderTop: '1px solid var(--qs-border)',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '12px',
+              background: 'var(--qs-bg-tertiary)',
+            }}>
+              <button
+                onClick={() => {
+                  setIsSaveModalOpen(false)
+                  setPendingImgData(null)
+                }}
+                disabled={saving}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--qs-border)',
+                  color: 'var(--qs-text-secondary)',
+                  padding: '8px 16px',
+                  borderRadius: 'var(--qs-radius-sm)',
+                  cursor: 'pointer',
+                  fontSize: 'var(--qs-font-sm)',
+                  fontWeight: 500,
+                  outline: 'none',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveSnapshot}
+                disabled={saving || !modalCategory.trim() || !modalFilename.trim()}
+                style={{
+                  background: 'var(--qs-blue)',
+                  border: 'none',
+                  color: '#ffffff',
+                  padding: '8px 20px',
+                  borderRadius: 'var(--qs-radius-sm)',
+                  cursor: (saving || !modalCategory.trim() || !modalFilename.trim()) ? 'not-allowed' : 'pointer',
+                  fontSize: 'var(--qs-font-sm)',
+                  fontWeight: 500,
+                  outline: 'none',
+                  opacity: (saving || !modalCategory.trim() || !modalFilename.trim()) ? 0.6 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                {saving ? 'Saving...' : 'Save to Board'}
+              </button>
             </div>
           </div>
         </div>

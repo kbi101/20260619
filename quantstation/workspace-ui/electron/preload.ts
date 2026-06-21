@@ -34,8 +34,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openSnapshotsWindow: () => ipcRenderer.send('window:open-snapshots'),
 
   // Snapshots APIs
-  getSnapshots: () => ipcRenderer.invoke('snapshots:list'),
-  readSnapshot: (filename: string) => ipcRenderer.invoke('snapshots:read', filename),
+  getSnapshots: (date?: string) => ipcRenderer.invoke('snapshots:list', date),
+  readSnapshot: (filename: string, date?: string) => ipcRenderer.invoke('snapshots:read', filename, date),
+  saveSnapshot: (payload: { category: string; filename: string; base64Data: string }) => 
+    ipcRenderer.invoke('snapshots:save', payload),
+  readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
+  getAvailableDates: () => ipcRenderer.invoke('snapshots:get-dates'),
   onSnapshotsUpdated: (callback: (snapshots: any[]) => void) => {
     const listener = (_event: any, snapshots: any[]) => callback(snapshots)
     ipcRenderer.on('snapshots:updated', listener)
@@ -51,6 +55,7 @@ export interface SnapshotMeta {
   category: string
   timestamp: string // HHMMSS
   mtime: number
+  date?: string
 }
 
 declare global {
@@ -66,8 +71,11 @@ declare global {
       openIntelWindow: () => void
       openWorkspaceWindow: () => void
       openSnapshotsWindow: () => void
-      getSnapshots: () => Promise<SnapshotMeta[]>
-      readSnapshot: (filename: string) => Promise<string>
+      getSnapshots: (date?: string) => Promise<SnapshotMeta[]>
+      readSnapshot: (filename: string, date?: string) => Promise<string>
+      saveSnapshot: (payload: { category: string; filename: string; base64Data: string }) => Promise<void>
+      readClipboardImage: () => Promise<string | null>
+      getAvailableDates: () => Promise<string[]>
       onSnapshotsUpdated: (callback: (snapshots: SnapshotMeta[]) => void) => () => void
     }
   }

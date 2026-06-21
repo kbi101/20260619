@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, clipboard } from 'electron'
 import path from 'path'
 import fs from 'fs'
 
@@ -20,21 +20,32 @@ interface SnapshotMeta {
   category: string
   timestamp: string // HHMMSS
   mtime: number
+  date?: string
 }
 
-function getTodayDir(): string {
+function getTodayStr(): string {
   const now = new Date()
   const yyyy = now.getFullYear()
   const mm = String(now.getMonth() + 1).padStart(2, '0')
   const dd = String(now.getDate()).padStart(2, '0')
-  return path.join('/Users/kepingbi/Data/QuantEdge', `${yyyy}${mm}${dd}`)
+  return `${yyyy}${mm}${dd}`
 }
 
-async function getSnapshotsList(): Promise<SnapshotMeta[]> {
-  const dir = getTodayDir()
+function getTodayDir(): string {
+  return path.join('/Users/kepingbi/Data/QuantEdge', getTodayStr())
+}
+
+function getDirForDate(date?: string): string {
+  const targetDate = (date && /^\d{8}$/.test(date)) ? date : getTodayStr()
+  return path.join('/Users/kepingbi/Data/QuantEdge', targetDate)
+}
+
+async function getSnapshotsList(date?: string): Promise<SnapshotMeta[]> {
+  const dir = getDirForDate(date)
   if (!fs.existsSync(dir)) {
     return []
   }
+  const targetDate = (date && /^\d{8}$/.test(date)) ? date : getTodayStr()
   try {
     const files = await fs.promises.readdir(dir)
     const list: SnapshotMeta[] = []
@@ -49,6 +60,7 @@ async function getSnapshotsList(): Promise<SnapshotMeta[]> {
           category: match[1],
           timestamp: match[2],
           mtime: stat.mtimeMs,
+          date: targetDate,
         })
       } else if (file.toLowerCase().endsWith('.png') || file.toLowerCase().endsWith('.jpg') || file.toLowerCase().endsWith('.jpeg')) {
         const filePath = path.join(dir, file)
@@ -63,6 +75,7 @@ async function getSnapshotsList(): Promise<SnapshotMeta[]> {
           category: nameWithoutExt || 'other',
           timestamp: `${hh}${mm}${ss}`,
           mtime: stat.mtimeMs,
+          date: targetDate,
         })
       }
     }
@@ -162,8 +175,8 @@ function forwardConsole(win: BrowserWindow, prefix: string): void {
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
-    width: 1920,
-    height: 1080,
+    width: 2560,
+    height: 1440,
     minWidth: 1280,
     minHeight: 720,
     title: 'Workspace',
@@ -201,8 +214,8 @@ function createWindow(): void {
 
 function createIntelWindow(): void {
   intelWindow = new BrowserWindow({
-    width: 1000,
-    height: 800,
+    width: 1600,
+    height: 1000,
     minWidth: 800,
     minHeight: 600,
     title: 'Intel Dashboard',
@@ -240,8 +253,8 @@ function createIntelWindow(): void {
 
 function createSnapshotsWindow(): void {
   snapshotsWindow = new BrowserWindow({
-    width: 1200,
-    height: 900,
+    width: 1920,
+    height: 1080,
     minWidth: 800,
     minHeight: 600,
     title: 'Snapshots Board',
@@ -350,15 +363,15 @@ ipcMain.on('window:open-snapshots', () => {
   showSnapshotsWindow()
 })
 
-ipcMain.handle('snapshots:list', async () => {
-  return await getSnapshotsList()
+ipcMain.handle('snapshots:list', async (event, date?: string) => {
+  return await getSnapshotsList(date)
 })
 
-ipcMain.handle('snapshots:read', async (event, filename: string) => {
+ipcMain.handle('snapshots:read', async (event, filename: string, date?: string) => {
   if (path.basename(filename) !== filename) {
     throw new Error('Invalid filename path traversal query')
   }
-  const dir = getTodayDir()
+  const dir = getDirForDate(date)
   const filePath = path.join(dir, filename)
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found: ${filename}`)
@@ -367,6 +380,114 @@ ipcMain.handle('snapshots:read', async (event, filename: string) => {
   const ext = path.extname(filename).substring(1).toLowerCase()
   const mime = ext === 'jpg' ? 'jpeg' : (ext || 'png')
   return `data:image/${mime};base64,${data.toString('base64')}`
+})
+
+ipcMain.handle('snapshots:get-dates', async () => {
+  const parentDir = '/Users/kepingbi/Data/QuantEdge'
+  if (!fs.existsSync(parentDir)) {
+    return [getTodayStr()]
+  }
+  try {
+    const files = await fs.promises.readdir(parentDir, { withFileTypes: true })
+    const dates = files
+      .filter(f => f.isDirectory() && /^\d{8}$/.test(f.name))
+      .map(f => f.name)
+    
+    const todayStr = getTodayStr()
+    if (!dates.includes(todayStr)) {
+      dates.push(todayStr)
+    }
+    return dates.sort((a, b) => b.localeCompare(a))
+  } catch (err) {
+    console.error('[Snapshots IPC] Failed to read parent directory for dates:', err)
+    return [getTodayStr()]
+  }
+})
+
+ipcMain.handle('snapshots:save', async (event, payload: { category: string; filename: string; base64Data: string }) => {
+  const { category, filename, base64Data } = payload
+
+  if (path.basename(filename) !== filename) {
+    throw new Error('Invalid filename path traversal query')
+  }
+
+  // Sanitize the category name to a clean, lowercase identifier
+  const safeCategory = category.trim().replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase()
+  if (!safeCategory) {
+    throw new Error('Invalid category name')
+  }
+
+  // Extract pure base64 data from a potentially formatted data-URL
+  let base64Image = base64Data
+  const base64Parts = base64Data.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/)
+  if (base64Parts) {
+    base64Image = base64Parts[2]
+  }
+
+  const buffer = Buffer.from(base64Image, 'base64')
+
+  const dir = getTodayDir()
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
+
+  // Enforce [category]_[HHMMSS].png formatting
+  const timeMatch = filename.match(/_(\d{6})\.(png|jpg|jpeg|gif)$/i)
+  let finalFilename: string
+  if (timeMatch) {
+    finalFilename = `${safeCategory}_${timeMatch[1]}.png`
+  } else {
+    const now = new Date()
+    const hh = String(now.getHours()).padStart(2, '0')
+    const mm = String(now.getMinutes()).padStart(2, '0')
+    const ss = String(now.getSeconds()).padStart(2, '0')
+    finalFilename = `${safeCategory}_${hh}${mm}${ss}.png`
+  }
+
+  const filePath = path.join(dir, finalFilename)
+  await fs.promises.writeFile(filePath, buffer)
+  console.log(`[Snapshots IPC] Successfully saved snapshot file: ${filePath}`)
+})
+
+ipcMain.handle('clipboard:read-image', async () => {
+  const image = clipboard.readImage()
+  if (image.isEmpty()) {
+    const filePaths = clipboard.read('filenames')
+    let paths: string[] = []
+    if (typeof filePaths === 'string' && filePaths) {
+      try {
+        const parsed = JSON.parse(filePaths)
+        if (Array.isArray(parsed)) {
+          paths = parsed
+        }
+      } catch (e) {}
+    } else if (Array.isArray(filePaths)) {
+      paths = filePaths
+    }
+
+    if (paths.length === 0) {
+      const fileUrl = clipboard.read('public.file-url')
+      if (fileUrl && fileUrl.startsWith('file://')) {
+        paths = [decodeURIComponent(fileUrl.substring(7))]
+      }
+    }
+
+    if (paths.length > 0) {
+      const filePath = paths[0]
+      const ext = path.extname(filePath).toLowerCase()
+      if (['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(ext)) {
+        try {
+          const data = await fs.promises.readFile(filePath)
+          const mime = ext === '.jpg' ? 'jpeg' : ext.substring(1)
+          return `data:image/${mime};base64,${data.toString('base64')}`
+        } catch (err) {
+          console.error(`[Clipboard IPC] Failed to read image file from clipboard path ${filePath}:`, err)
+        }
+      }
+    }
+    return null
+  }
+  return image.toDataURL()
 })
 
 ipcMain.handle('app:version', () => {
