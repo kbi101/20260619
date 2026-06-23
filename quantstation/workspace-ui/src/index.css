@@ -929,9 +929,9 @@ body {
 }
 
 .btn-indicator--active {
-  background: var(--qs-blue-bg) !important;
-  color: var(--qs-blue) !important;
-  border-color: var(--qs-blue) !important;
+  background: var(--qs-blue-bg);
+  color: var(--qs-blue);
+  border-color: var(--qs-blue);
   box-shadow: 0 0 6px hsla(215, 80%, 56%, 0.15);
 }
 

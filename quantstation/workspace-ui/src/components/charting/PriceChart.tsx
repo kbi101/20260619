@@ -303,6 +303,16 @@ function calculateADX(bars: { high: number; low: number; close: number }[], peri
   return { adx: adxValues, plusDI: finalPlusDI, minusDI: finalMinusDI }
 }
 
+const getActiveButtonStyle = (isActive: boolean, activeColor: string) => {
+  if (!isActive) return {}
+  return {
+    color: activeColor,
+    borderColor: activeColor,
+    background: `${activeColor}1a`, // ~10% opacity in hex
+    boxShadow: `0 0 6px ${activeColor}26`, // ~15% opacity in hex
+  }
+}
+
 // ═══════════════════════════════════════════════════════
 // Main PriceChart Component
 // ═══════════════════════════════════════════════════════
@@ -454,7 +464,11 @@ export const PriceChart: React.FC = () => {
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect
+        const range = chart.timeScale().getVisibleLogicalRange()
         chart.applyOptions({ width, height })
+        if (range) {
+          chart.timeScale().setVisibleLogicalRange(range)
+        }
       }
     })
     resizeObserver.observe(chartContainerRef.current)
@@ -716,7 +730,11 @@ export const PriceChart: React.FC = () => {
       const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
           const { width, height } = entry.contentRect
+          const range = newChart.timeScale().getVisibleLogicalRange()
           newChart.applyOptions({ width, height })
+          if (range) {
+            newChart.timeScale().setVisibleLogicalRange(range)
+          }
         }
       })
       resizeObserver.observe(rsiContainerRef.current)
@@ -796,7 +814,11 @@ export const PriceChart: React.FC = () => {
       const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
           const { width, height } = entry.contentRect
+          const range = newChart.timeScale().getVisibleLogicalRange()
           newChart.applyOptions({ width, height })
+          if (range) {
+            newChart.timeScale().setVisibleLogicalRange(range)
+          }
         }
       })
       resizeObserver.observe(macdContainerRef.current)
@@ -885,7 +907,11 @@ export const PriceChart: React.FC = () => {
       const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
           const { width, height } = entry.contentRect
+          const range = newChart.timeScale().getVisibleLogicalRange()
           newChart.applyOptions({ width, height })
+          if (range) {
+            newChart.timeScale().setVisibleLogicalRange(range)
+          }
         }
       })
       resizeObserver.observe(adxContainerRef.current)
@@ -982,30 +1008,35 @@ export const PriceChart: React.FC = () => {
           <button
             onClick={() => setShowVwap(!showVwap)}
             className={`btn-indicator ${showVwap ? 'btn-indicator--active' : ''}`}
+            style={getActiveButtonStyle(showVwap, '#29b6f6')}
           >
             VWAP
           </button>
           <button
             onClick={() => setShowBb(!showBb)}
             className={`btn-indicator ${showBb ? 'btn-indicator--active' : ''}`}
+            style={getActiveButtonStyle(showBb, '#9062eb')}
           >
             Bollinger
           </button>
           <button
             onClick={() => setShowMa9(!showMa9)}
             className={`btn-indicator ${showMa9 ? 'btn-indicator--active' : ''}`}
+            style={getActiveButtonStyle(showMa9, '#e5b83b')}
           >
             MA 9
           </button>
           <button
             onClick={() => setShowMa21(!showMa21)}
             className={`btn-indicator ${showMa21 ? 'btn-indicator--active' : ''}`}
+            style={getActiveButtonStyle(showMa21, '#ff7043')}
           >
             MA 21
           </button>
           <button
             onClick={() => setShowMa50(!showMa50)}
             className={`btn-indicator ${showMa50 ? 'btn-indicator--active' : ''}`}
+            style={getActiveButtonStyle(showMa50, '#ff3d00')}
           >
             MA 50
           </button>
@@ -1026,18 +1057,21 @@ export const PriceChart: React.FC = () => {
           <button
             onClick={() => setShowRsi(!showRsi)}
             className={`btn-indicator ${showRsi ? 'btn-indicator--active' : ''}`}
+            style={getActiveButtonStyle(showRsi, '#9062eb')}
           >
             RSI
           </button>
           <button
             onClick={() => setShowMacd(!showMacd)}
             className={`btn-indicator ${showMacd ? 'btn-indicator--active' : ''}`}
+            style={getActiveButtonStyle(showMacd, '#29b6f6')}
           >
             MACD
           </button>
           <button
             onClick={() => setShowAdx(!showAdx)}
             className={`btn-indicator ${showAdx ? 'btn-indicator--active' : ''}`}
+            style={getActiveButtonStyle(showAdx, '#ffca28')}
           >
             ADX
           </button>
