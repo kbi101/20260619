@@ -79,6 +79,13 @@ public class MassiveStreamClient implements MarketDataProvider {
         return "Massive.com";
     }
 
+    @Override
+    public java.util.concurrent.CompletableFuture<java.util.List<com.quantstation.domain.BarData>> fetchHistoricalBars(
+            String symbol, String duration, String barSize) {
+        log.warn("Massive.com: Historical bars not implemented. Returning empty list.");
+        return java.util.concurrent.CompletableFuture.completedFuture(java.util.List.of());
+    }
+
     // TODO: Implement WebSocket connection lifecycle:
     // private void connect() {
     //     // 1. Open WebSocket to wsUrl

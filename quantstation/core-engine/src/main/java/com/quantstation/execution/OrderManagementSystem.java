@@ -165,6 +165,12 @@ public class OrderManagementSystem {
         return Map.copyOf(activeOrders);
     }
 
+    public Optional<Order> getOrderByIbkrId(int ibkrOrderId) {
+        return activeOrders.values().stream()
+                .filter(o -> o.getIbkrOrderId() == ibkrOrderId)
+                .findFirst();
+    }
+
     public Map<String, Position> getPositions() {
         return Map.copyOf(positions);
     }

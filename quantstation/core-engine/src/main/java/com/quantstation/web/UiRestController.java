@@ -2,6 +2,7 @@ package com.quantstation.web;
 
 import com.quantstation.domain.Order;
 import com.quantstation.execution.OrderManagementSystem;
+import com.quantstation.marketdata.MarketDataProvider;
 import com.quantstation.marketdata.TickRouter;
 import com.quantstation.repository.QuestDbTickWriter;
 import com.quantstation.repository.RedisStateRepository;
@@ -30,15 +31,41 @@ public class UiRestController {
     private final StrategyEngine strategyEngine;
     private final RedisStateRepository redisState;
     private final QuestDbTickWriter questDbWriter;
+    private final MarketDataProvider marketDataProvider;
 
     public UiRestController(OrderManagementSystem oms,
                             StrategyEngine strategyEngine,
                             RedisStateRepository redisState,
-                            QuestDbTickWriter questDbWriter) {
+                            QuestDbTickWriter questDbWriter,
+                            MarketDataProvider marketDataProvider) {
         this.oms = oms;
         this.strategyEngine = strategyEngine;
         this.redisState = redisState;
         this.questDbWriter = questDbWriter;
+        this.marketDataProvider = marketDataProvider;
+    }
+
+    // ── Real-time Ticks Snapshot ─────────────────────
+
+    @GetMapping("/ticks/latest")
+    public ResponseEntity<Map<String, com.quantstation.domain.Tick>> getLastTicks() {
+        return ResponseEntity.ok(marketDataProvider.getLastTicks());
+    }
+
+    // ── Historical Bars ──────────────────────────────
+
+    @GetMapping("/history/bars")
+    public java.util.concurrent.CompletableFuture<ResponseEntity<Object>> getHistoricalBars(
+            @RequestParam String symbol,
+            @RequestParam(defaultValue = "1 D") String duration,
+            @RequestParam(defaultValue = "1 min") String barSize) {
+        return marketDataProvider.fetchHistoricalBars(symbol, duration, barSize)
+                .handle((bars, err) -> {
+                    if (err != null) {
+                        return ResponseEntity.internalServerError().body(err.getMessage());
+                    }
+                    return ResponseEntity.ok(bars);
+                });
     }
 
     // ── Orders ──────────────────────────────────────

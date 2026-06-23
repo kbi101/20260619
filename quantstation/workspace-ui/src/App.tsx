@@ -13,10 +13,7 @@ import { SnapshotsBoard } from './components/snapshots/SnapshotsBoard'
  * QuantStation — Main Workspace Grid Board Component
  */
 const Workspace: React.FC = () => {
-  // Initialize WebSocket connection
-  useMarketStream()
-
-  const { connected, activeSymbol, setActiveSymbol } = useStore()
+  const { connected, ibkrConnected, activeSymbol, setActiveSymbol } = useStore()
 
   // Register Electron IPC listener for cross-window symbol selections
   useEffect(() => {
@@ -102,9 +99,9 @@ const Workspace: React.FC = () => {
           Snapshots Board
         </button>
         <span className="titlebar__status" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span className={`pulse-dot ${connected ? 'pulse-dot--active' : 'pulse-dot--inactive'}`} />
-          <span className={connected ? 'titlebar__status--connected' : 'titlebar__status--disconnected'}>
-            {connected ? 'LIVE' : 'DISCONNECTED'}
+          <span className={`pulse-dot ${ibkrConnected ? 'pulse-dot--active' : 'pulse-dot--inactive'}`} />
+          <span className={ibkrConnected ? 'titlebar__status--connected' : 'titlebar__status--disconnected'}>
+            {ibkrConnected ? 'LIVE' : 'DISCONNECTED'}
           </span>
         </span>
       </div>
@@ -168,6 +165,10 @@ const Workspace: React.FC = () => {
  * Root Router App Component
  */
 const App: React.FC = () => {
+  // Initialize WebSocket connection at root to enable continuous status polling
+  useMarketStream()
+
+  const { ibkrConnected } = useStore()
   const [route, setRoute] = useState(window.location.hash)
 
   useEffect(() => {
@@ -179,12 +180,12 @@ const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
-  if (route.startsWith('#/intel')) {
-    return <IntelDashboard />
-  }
-
   if (route.startsWith('#/snapshots')) {
     return <SnapshotsBoard />
+  }
+
+  if (route.startsWith('#/intel')) {
+    return <IntelDashboard />
   }
 
   return <Workspace />

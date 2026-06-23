@@ -14,7 +14,11 @@ export const PriceChart: React.FC = () => {
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null)
   const { activeSymbol } = useStore()
+  
+  const tick = useStore((state) => state.ticks[activeSymbol])
+  const currentBarRef = useRef<{ time: number; open: number; high: number; low: number; close: number; volume: number } | null>(null)
 
+  // ── 1. Initialize Chart & Fetch History ─────────────
   useEffect(() => {
     if (!chartContainerRef.current) return
 
@@ -65,33 +69,45 @@ export const PriceChart: React.FC = () => {
       scaleMargins: { top: 0.8, bottom: 0 },
     })
 
-    // Demo data — will be replaced by real ticks
-    const now = Math.floor(Date.now() / 1000)
-    const demoData = []
-    const demoVolume = []
-    let price = 450
-
-    for (let i = 200; i >= 0; i--) {
-      const time = now - i * 60
-      const open = price + (Math.random() - 0.48) * 2
-      const close = open + (Math.random() - 0.48) * 3
-      const high = Math.max(open, close) + Math.random() * 1.5
-      const low = Math.min(open, close) - Math.random() * 1.5
-      const vol = Math.floor(Math.random() * 10000 + 1000)
-      price = close
-
-      demoData.push({ time, open, high, low, close })
-      demoVolume.push({
-        time,
-        value: vol,
-        color: close >= open
-          ? 'rgba(38, 208, 124, 0.3)'
-          : 'rgba(242, 54, 69, 0.3)',
+    // Fetch real historical data from IBKR
+    fetch(`http://localhost:8080/api/history/bars?symbol=${activeSymbol}&duration=1 D&barSize=1 min`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch historical bars')
+        return res.json()
       })
-    }
+      .then((data: any[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const bars = data.map((b: any) => ({
+            time: Math.floor(new Date(b.barStart).getTime() / 1000),
+            open: b.open,
+            high: b.high,
+            low: b.low,
+            close: b.close
+          }))
+          const volumes = data.map((b: any) => ({
+            time: Math.floor(new Date(b.barStart).getTime() / 1000),
+            value: b.volume,
+            color: b.close >= b.open ? 'rgba(38, 208, 124, 0.3)' : 'rgba(242, 54, 69, 0.3)'
+          }))
+          
+          candleSeries.setData(bars as any)
+          volumeSeries.setData(volumes as any)
 
-    candleSeries.setData(demoData as any)
-    volumeSeries.setData(demoVolume as any)
+          // Track the last bar for streaming tick updates
+          const lastBar = data[data.length - 1]
+          currentBarRef.current = {
+            time: Math.floor(new Date(lastBar.barStart).getTime() / 1000),
+            open: lastBar.open,
+            high: lastBar.high,
+            low: lastBar.low,
+            close: lastBar.close,
+            volume: lastBar.volume
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn("[PriceChart] Could not fetch historical bars, chart will start empty.", err)
+      })
 
     chartRef.current = chart
     candleSeriesRef.current = candleSeries
@@ -109,8 +125,54 @@ export const PriceChart: React.FC = () => {
     return () => {
       resizeObserver.disconnect()
       chart.remove()
+      currentBarRef.current = null
     }
   }, [activeSymbol])
+
+  // ── 2. Stream Live Tick Data into Current Minute Bar ──
+  useEffect(() => {
+    if (!tick || !candleSeriesRef.current || !volumeSeriesRef.current) return
+
+    const time = Math.floor(new Date(tick.timestamp).getTime() / 1000)
+    const roundedTime = Math.floor(time / 60) * 60 // Round to start of minute
+
+    const lastBar = currentBarRef.current
+
+    if (lastBar && lastBar.time === roundedTime) {
+      // Update the current minute bar
+      lastBar.high = Math.max(lastBar.high, tick.price)
+      lastBar.low = Math.min(lastBar.low, tick.price)
+      lastBar.close = tick.price
+      lastBar.volume += tick.size
+    } else {
+      // Create a new minute bar
+      currentBarRef.current = {
+        time: roundedTime,
+        open: tick.price,
+        high: tick.price,
+        low: tick.price,
+        close: tick.price,
+        volume: tick.size
+      }
+    }
+
+    const current = currentBarRef.current
+    if (current) {
+      candleSeriesRef.current.update({
+        time: current.time,
+        open: current.open,
+        high: current.high,
+        low: current.low,
+        close: current.close
+      } as any)
+
+      volumeSeriesRef.current.update({
+        time: current.time,
+        value: current.volume,
+        color: current.close >= current.open ? 'rgba(38, 208, 124, 0.3)' : 'rgba(242, 54, 69, 0.3)'
+      } as any)
+    }
+  }, [tick])
 
   return (
     <div

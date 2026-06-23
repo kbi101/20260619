@@ -14,12 +14,13 @@
 ```
 quantstation/
 ├── .editorconfig                    # 4-space Java, 2-space TS/CSS
+├── .env                             # Symlink to infra/.env
 ├── .env.example                     # Credential template
 ├── .gitignore                       # Java/Node/Docker/IDE/secrets
 ├── README.md                        # Architecture diagram, port map, quick-start
 │
 ├── infra/                           # ═══ INFRASTRUCTURE AS CODE ═══
-│   ├── docker-compose.yml           # QuestDB + Redis + IB Gateway (OrbStack)
+│   ├── docker-compose.yml           # QuestDB + Redis + Core Engine (OrbStack)
 │   ├── questdb/
 │   │   ├── server.conf              # NVMe-tuned ingestion config
 │   │   └── schema-init.sql          # 6 time-series table definitions
@@ -29,8 +30,10 @@ quantstation/
 │       └── jts.ini                  # API-only headless, paper port 4002
 │
 ├── core-engine/                     # ═══ SPRING BOOT BACKEND ═══
-│   ├── build.gradle.kts             # Spring Boot 3.4.1, Java 21, dependencies
+│   ├── build.gradle.kts             # Spring Boot 3.4.1, Java 21, dependencies, local TWS API JARs
 │   ├── settings.gradle.kts          # Project name and repos
+│   ├── libs/                        # ═══ TWS API LIBRARY ═══
+│   │   └── TwsApi.jar               # Official Interactive Brokers TWS API JAR
 │   └── src/main/
 │       ├── resources/
 │       │   └── application.yml      # Config with paper/live/massive profiles
@@ -38,11 +41,28 @@ quantstation/
 │           ├── QuantStationApp.java
 │           ├── config/              # 4 config classes
 │           ├── domain/              # 5 domain models
-│           ├── execution/           # OMS + RiskManager + 3 IBKR classes
+│           ├── execution/           # OMS + RiskManager + 4 IBKR classes
+│           │   ├── OrderManagementSystem.java
+│           │   ├── RiskManager.java
+│           │   └── ibkr/
+│           │       ├── IbkrConnectionManager.java  # Connection check loop, TWS API setup
+│           │       ├── IbkrOrderRouter.java        # Translates and routes orders via EClientSocket
+│           │       ├── IbkrCallbackHandler.java    # Implements EWrapper for TWS API callbacks
+│           │       └── IbkrConfigService.java      # Manages credentials writing/wiping
 │           ├── marketdata/          # TickRouter + 3 provider adapters
+│           │   ├── MarketDataProvider.java
+│           │   ├── TickRouter.java
+│           │   ├── ibkr/
+│           │   │   └── IbkrMarketDataAdapter.java  # Fully implemented with symbol reference re-sub
+│           │   └── massive/
+│           │       └── MassiveStreamClient.java
 │           ├── repository/          # Redis + QuestDB repositories
 │           ├── strategy/            # Engine + interface + Signal
 │           └── web/                 # WebSocket + REST controllers
+│               ├── UiRestController.java
+│               ├── UiWebSocketController.java
+│               ├── IbkrLoginController.java        # Dynamic credentials handler endpoint
+│               └── WebSocketSubscriptionListener.java # Tracks STOMP subs to subscribe/unsubscribe on adapter
 │
 ├── workspace-ui/                    # ═══ ELECTRON + REACT UI ═══
 │   ├── package.json                 # React 19, Electron, Zustand, STOMP.js
@@ -54,43 +74,48 @@ quantstation/
 │   │   └── preload.ts               # Secure IPC bridge
 │   └── src/
 │       ├── main.tsx                 # React entry
-│       ├── App.tsx                  # 4-panel grid layout
-│       ├── index.css                # Full design system
-│       ├── components/              # 5 trading components
-│       ├── hooks/                   # WebSocket connection hook
+│       ├── App.tsx                  # Conditional route-based UI layout
+│       ├── index.css                # Full design system, login styles
+│       ├── components/              # 6 trading components
+│       │   ├── LoginScreen.tsx      # Dynamic credentials entry & noVNC wrapper
+│       │   └── ...
+│       ├── hooks/                   # WebSocket connection hook (polls /api/ibkr/status)
 │       ├── store/                   # Zustand state management
 │       └── types/                   # TypeScript interfaces
 │
 └── scripts/                         # ═══ OPERATIONAL SCRIPTS ═══
-    ├── start-pod.sh                 # Master orchestrator
+    ├── start-pod.sh                 # Master orchestrator (waits for core-engine UP status)
     ├── stop-pod.sh                  # Graceful shutdown
     ├── check-io-bottleneck.sh       # Docker I/O validation
     └── backup-questdb.sh            # Cold storage dump
 ```
 
-**Total source files:** 61
+**Total source files:** 65
 
 ---
 
+
 ## 2. Infrastructure Implementation
 
-### 2.1 Docker Compose
+### 2.1 Docker Compose & Environment Shared Variables
 
 **File:** [`infra/docker-compose.yml`](../../quantstation/infra/docker-compose.yml)
 
-Three services on a custom bridge network `quantstation-net` (subnet `172.18.0.0/16`):
+The services run on a custom bridge network `quantstation-net` (subnet `172.18.0.0/16`):
 
-| Service       | Container Name            | IP           | Memory | Volumes                |
-|:--------------|:--------------------------|:-------------|:-------|:-----------------------|
-| `questdb`     | `quantstation-questdb`    | `172.18.0.10`| 8GB    | Named: `questdb_data`  |
-| `redis`       | `quantstation-redis`      | `172.18.0.11`| 2GB    | Named: `redis_data`    |
-| `ib-gateway`  | `quantstation-ib-gateway` | `172.18.0.12`| 2GB    | Bind: `jts.ini`        |
+| Service       | Container Name            | IP           | Memory | Ports / Configuration |
+|:--------------|:--------------------------|:-------------|:-------|:----------------------|
+| `questdb`     | `quantstation-questdb`    | `172.18.0.10`| 8GB    | Ports: `9000`, `9009` |
+| `redis`       | `quantstation-redis`      | `172.18.0.11`| 2GB    | Port: `6379`          |
+| `core-engine` | `quantstation-core-engine`| (dynamic)    | 2GB    | Ports: `8080`, `8081` |
 
 **Design decisions:**
-- Named volumes for QuestDB/Redis — faster than bind mounts through the virtualization layer
-- Fixed IPs via IPAM subnet — deterministic for firewall rules and `TrustedIPs` in jts.ini
-- Health checks on all services with appropriate start periods (QuestDB: 15s, IB Gateway: 60s)
-- IB Gateway credentials via environment variables from `.env` file
+- **Native Host Connect (Primary):** The containerized `core-engine` routes connections back to the host via `extra_hosts` setup mapping `host.docker.internal` to `host-gateway`. It communicates with the macOS host-run Interactive Brokers Gateway GUI process on port `4001` (live) or `4002` (paper).
+- **Environment Configuration:** A symbolic link at the project root (`.env`) points to the main config file (`quantstation/infra/.env`). This allows OrbStack / Docker Compose, Operational Scripts, and the Spring Boot application build tools to load active profiles, hosts, and credentials from a single source.
+- **Host Firewall & jts.ini Configuration:** The native host configuration file (`/Users/kepingbi/Jts/jts.ini`) has been updated to include internal Docker / OrbStack subnets (`172.16.0.0/12`, `192.168.0.0/16`, `10.0.0.0/8`) under the `TrustedIPs` property, authorizing inbound connection requests from the containerized Spring Boot app.
+- **Named volumes for QuestDB/Redis:** Retained to provide fast I/O throughput.
+- **Removal of Headless Gateway Container:** The headless containerized `ib-gateway` service was removed from the default `docker-compose.yml` to prevent conflict with native GUI setups, retaining it only as a backup configuration.
+
 
 ### 2.2 QuestDB Configuration
 
@@ -213,15 +238,21 @@ Pre-trade validation with three checks (configurable via `application.yml`):
 
 Returns `Optional<String>` — empty if valid, rejection reason if not.
 
-#### IBKR Integration (3 classes)
+#### IBKR Integration (4 classes)
 
 | Class | File | Responsibility |
 |:------|:-----|:---------------|
-| `IbkrConnectionManager` | [`IbkrConnectionManager.java`](../../quantstation/core-engine/src/main/java/com/quantstation/execution/ibkr/IbkrConnectionManager.java) | TCP socket lifecycle, reconnection, `AtomicInteger` order ID sequencing |
-| `IbkrOrderRouter` | [`IbkrOrderRouter.java`](../../quantstation/core-engine/src/main/java/com/quantstation/execution/ibkr/IbkrOrderRouter.java) | `Order` → IB `Contract` + `Order` translation, place/cancel |
-| `IbkrCallbackHandler` | [`IbkrCallbackHandler.java`](../../quantstation/core-engine/src/main/java/com/quantstation/execution/ibkr/IbkrCallbackHandler.java) | `EWrapper` bridge: dispatches to OMS (fills), TickRouter (data), ConnectionManager (lifecycle) |
+| `IbkrConnectionManager` | [`IbkrConnectionManager.java`](../../quantstation/core-engine/src/main/java/com/quantstation/execution/ibkr/IbkrConnectionManager.java) | TCP socket lifecycle using `EClientSocket`, order ID sequencing, virtual-thread friendly 3s reconnection loop |
+| `IbkrOrderRouter` | [`IbkrOrderRouter.java`](../../quantstation/core-engine/src/main/java/com/quantstation/execution/ibkr/IbkrOrderRouter.java) | Translates internal `Order` domain model to IB `Contract` and `Order` objects; routes placement/cancel requests |
+| `IbkrCallbackHandler` | [`IbkrCallbackHandler.java`](../../quantstation/core-engine/src/main/java/com/quantstation/execution/ibkr/IbkrCallbackHandler.java) | Implements official `EWrapper` callback interface; routes fills to OMS, ticks to `TickRouter`, and connection states |
+| `IbkrConfigService` | [`IbkrConfigService.java`](../../quantstation/core-engine/src/main/java/com/quantstation/execution/ibkr/IbkrConfigService.java) | Manages writing credentials to `config.ini`, wiping them post-handshake, and restarting Gateway via IBC Command Server |
 
-**Current status:** Framework complete with documented TODO stubs for TWS API JAR integration. The connection lifecycle, callback routing, and order translation patterns are fully designed.
+**Connection Lifecycle & Security:**
+- **Reconnection Loop:** A thread-safe checking loop runs every 3 seconds to auto-reconnect if the connection is lost. The previous virtual thread-per-attempt pattern was removed to prevent virtual thread storms during connection failures.
+- **Dynamic Port Selection:** The backend automatically targets port `4001` (Live) or `4002` (Paper) depending on the configuration and dynamic credentials payload.
+- **Security Compliance:** To prevent sensitive plaintext credentials from sitting in local config files, `IbkrConfigService` automatically overwrites and wipes the stored username and password from the configuration ini file immediately upon successful API client handshake.
+- **Market Data Setup:** The connection manager calls `client.reqMarketDataType(3)` (Delayed) upon connection to ensure data streaming functions even if the gateway account has no real-time data subscription.
+
 
 ### 3.5 Data Plane
 
@@ -249,11 +280,17 @@ Strategy pattern with three implementations:
 
 | Implementation | Profile(s) | Status |
 |:---------------|:-----------|:-------|
-| `IbkrMarketDataAdapter` | `default`, `paper`, `live` | Active (stub for TWS API) |
+| `IbkrMarketDataAdapter` | `default`, `paper`, `live` | Active (Fully implemented via TWS API `reqMktData` / `reqHistoricalData`) |
 | `MassiveStreamClient` | `massive` | Skeleton (contract stub) |
 | Alpha Vantage | Always available | Active (REST, not streaming) |
 
 Hot-swap via Spring `@Profile` — zero Execution Plane changes.
+
+**IbkrMarketDataAdapter Features:**
+- **Dynamic Re-subscription:** Monitors connection state at 1-second intervals. Automatically re-sends `reqMktData` for all desired symbols upon socket reconnection, and wipes state tracking structures if the socket drops.
+- **Reference Queuing:** If a client requests a subscription before connection manager establishes the socket, the adapter queues the symbol under `desiredSymbols` and automatically initiates the subscription handshake once the connection is established.
+- **Historical Queries:** Resolves historical requests via `fetchHistoricalBars` by calling `client.reqHistoricalData(...)`, returning a `CompletableFuture<List<BarData>>` completed by the `IbkrCallbackHandler` once the `historicalDataEnd` callback fires.
+
 
 #### Alpha Vantage Client
 
@@ -301,10 +338,13 @@ qs:pnl:total                 → Double (total PnL)
 
 ### 3.8 Web Layer
 
-| Class | File | Endpoints |
-|:------|:-----|:----------|
+| Class | File | Endpoints / Responsibilities |
+|:------|:-----|:-----------------------------|
 | `UiWebSocketController` | [`UiWebSocketController.java`](../../quantstation/core-engine/src/main/java/com/quantstation/web/UiWebSocketController.java) | Push methods: `pushTick()`, `pushOrderUpdate()`, `pushPositionUpdate()`, `pushPnlUpdate()` |
 | `UiRestController` | [`UiRestController.java`](../../quantstation/core-engine/src/main/java/com/quantstation/web/UiRestController.java) | `POST /api/orders`, `DELETE /api/orders/{id}`, `GET /api/orders`, `GET /api/positions`, `GET /api/status` |
+| `IbkrLoginController` | [`IbkrLoginController.java`](../../quantstation/core-engine/src/main/java/com/quantstation/web/IbkrLoginController.java) | REST endpoints for IBKR session orchestration:<br>• `POST /api/ibkr/login`: Configures dynamic credentials, restarts the Gateway instance, and switches ports.<br>• `GET /api/ibkr/status`: Exposes current socket health, port, and connection details. |
+| `WebSocketSubscriptionListener` | [`WebSocketSubscriptionListener.java`](../../quantstation/core-engine/src/main/java/com/quantstation/web/WebSocketSubscriptionListener.java) | Listens to STOMP subscription events (`SessionSubscribeEvent` / `SessionUnsubscribeEvent`). Parses ticker streams (e.g. `/topic/ticks/AAPL`) and counts client references in a concurrent map; issues provider-level `subscribe()` and `unsubscribe()` calls when reference count crosses boundary thresholds. |
+
 
 ### 3.9 Application Configuration
 
@@ -357,37 +397,40 @@ Includes: panel grid system, order book styles, PnL cards, status badges, blotte
 
 **File:** [`src/store/useStore.ts`](../../quantstation/workspace-ui/src/store/useStore.ts)
 
-Single store driven by WebSocket:
+Single store driven by WebSocket with local storage sync:
 
 | Slice          | Type                        | Update Pattern                    |
 |:---------------|:----------------------------|:----------------------------------|
 | `ticks`        | `Record<string, Tick>`      | Keyed by symbol (O(1) lookups)   |
+| `watchlist`    | `WatchlistTicker[]`         | Array of tickers with ATR/RVOL; saved to `localStorage` and synced across windows |
 | `orders`       | `Order[]`                   | Upsert by `orderId`             |
 | `positions`    | `Record<string, Position>`  | Keyed by symbol                  |
 | `pnl`          | `PnlSnapshot`               | Full replace                     |
 | `connected`    | `boolean`                   | Set by WebSocket lifecycle       |
+| `ibkrConnected`| `boolean`                   | Set by IBKR status polling        |
 | `activeSymbol` | `string`                    | Set by user (default: `SPY`)     |
 
-### 4.5 WebSocket Hook
+### 4.5 WebSocket Hook & Status Poller
 
 **File:** [`src/hooks/useMarketStream.ts`](../../quantstation/workspace-ui/src/hooks/useMarketStream.ts)
 
-STOMP client (`@stomp/stompjs`) lifecycle:
-- Connects to `ws://localhost:8080/ws`
-- Subscribes to 4 topics on connect: ticks, orders, positions, PnL
-- Auto-reconnect with 2s delay
-- Heartbeat: 10s incoming/outgoing
-- Re-subscribes when `activeSymbol` changes
+STOMP client (`@stomp/stompjs`) lifecycle and polling logic:
+- **STOMP Socket:** Connects to `ws://localhost:8080/ws` with 10s heartbeats and 2s reconnect delay.
+- **Static Subscriptions:** Subscribes to `/topic/orders`, `/topic/positions`, and `/topic/pnl` on connection.
+- **Dynamic Subscriptions:** Tracks `activeSymbol` and `watchlist` values; dynamically subscribes to `/topic/ticks/{symbol}` for active symbol and watchlist items, sending unsubscribe signals for removed symbols.
+- **Initial Seeding:** Performs a GET request to `/api/ticks/latest` immediately upon connection/subscription changes to pre-populate the store without waiting for next ticker change.
+- **IBKR Status Polling:** When WebSocket is active, polls `http://localhost:8080/api/ibkr/status` every 3 seconds to update the `ibkrConnected` state, switching to `false` if the poll fails or the socket closes.
 
 ### 4.6 Components
 
 | Component | File | Description |
 |:----------|:-----|:------------|
-| `OrderBook` | [`OrderBook.tsx`](../../quantstation/workspace-ui/src/components/orderbook/OrderBook.tsx) | L2 depth with bid/ask size bars, spread display, hover highlighting |
-| `PriceChart` | [`PriceChart.tsx`](../../quantstation/workspace-ui/src/components/charting/PriceChart.tsx) | Lightweight Charts candlestick + volume, dark theme, `ResizeObserver` |
-| `OrderEntry` | [`OrderEntry.tsx`](../../quantstation/workspace-ui/src/components/execution/OrderEntry.tsx) | Form: symbol, qty, type, limit price; Buy/Sell buttons → REST API |
-| `OrderBlotter` | [`OrderBlotter.tsx`](../../quantstation/workspace-ui/src/components/execution/OrderBlotter.tsx) | Table with status badges, cancel buttons, fill tracking |
-| `PnlTicker` | [`PnlTicker.tsx`](../../quantstation/workspace-ui/src/components/pnl/PnlTicker.tsx) | 3 PnL cards (unrealized/realized/total) + positions table |
+| `LoginScreen` | [`LoginScreen.tsx`](../../quantstation/workspace-ui/src/components/LoginScreen.tsx) | Prompts for IBKR username, password, and mode (Paper/Live); executes HTTP POST to login API; renders noVNC iframe to support VNC manual input and visual MFA validation. |
+| `OrderBook` | [`OrderBook.tsx`](../../quantstation/workspace-ui/src/components/orderbook/OrderBook.tsx) | L2 depth with bid/ask size bars, spread display, hover highlighting. |
+| `PriceChart` | [`PriceChart.tsx`](../../quantstation/workspace-ui/src/components/charting/PriceChart.tsx) | Lightweight Charts candlestick + volume, dark theme, `ResizeObserver`. |
+| `OrderEntry` | [`OrderEntry.tsx`](../../quantstation/workspace-ui/src/components/execution/OrderEntry.tsx) | Form: symbol, qty, type, limit price; Buy/Sell buttons → REST API. |
+| `OrderBlotter` | [`OrderBlotter.tsx`](../../quantstation/workspace-ui/src/components/execution/OrderBlotter.tsx) | Table with status badges, cancel buttons, fill tracking. |
+| `PnlTicker` | [`PnlTicker.tsx`](../../quantstation/workspace-ui/src/components/pnl/PnlTicker.tsx) | 3 PnL cards (unrealized/realized/total) + positions table. |
 
 ### 4.7 App Layout
 
@@ -412,18 +455,7 @@ Custom title bar with: app name, active symbol badge, search input, connection s
 
 ## 6. Remaining Work (Post-Foundation)
 
-### 6.1 IB TWS API Integration
-
-The IBKR layer has complete architecture and callback routing but requires the TWS API JARs:
-
-1. Download TWS API from IBKR Campus
-2. Place JARs in `core-engine/libs/` or publish to local Maven repo
-3. Add `flatDir` or `maven` dependency in `build.gradle.kts`
-4. Implement `EWrapper` interface in `IbkrCallbackHandler`
-5. Wire `EClientSocket` in `IbkrConnectionManager.connect()`
-6. Implement `Contract`/`Order` builders in `IbkrOrderRouter`
-
-### 6.2 Massive.com Integration
+### 6.1 Massive.com Integration
 
 Skeleton in place (`MassiveStreamClient.java`). To activate:
 
@@ -433,45 +465,32 @@ Skeleton in place (`MassiveStreamClient.java`). To activate:
 4. Forward to `TickRouter` via `TickListener`
 5. Switch profile to `massive`
 
-### 6.3 Gradle Wrapper
-
-Generate the wrapper for portable builds:
-
-```bash
-cd core-engine && gradle wrapper --gradle-version 9.2
-```
-
-### 6.4 Frontend Dependencies
-
-```bash
-cd workspace-ui && pnpm install
-```
-
-### 6.5 Unit Tests
+### 6.2 Unit & Integration Tests
 
 Priority test cases to implement:
-### 3. Docker Containerization & Pod Verification (Success)
-We successfully dockerized the **Spring Boot Core Engine** by adding a robust, glibc-based `Dockerfile` utilizing `eclipse-temurin:21` (resolving dynamic library loading issues for QuestDB). 
-
-The containerized stack has been fully validated:
-- **Port Conflict Fix**: Re-mapped IB Gateway's VNC debugging port from `5900` to `5990` to avoid conflicts with macOS built-in Screen Sharing.
-- **Subnet Pool Conflict Fix**: Switched to a standard bridge network (`quantstation-net`) to eliminate overlapping subnet conflicts.
-- **Unified Orchestration**: Updated `scripts/start-pod.sh` to wait for the containerized Core Engine's Actuator health check.
-- **Execution Success**: Launched the complete stack via `start-pod.sh` (Redis, QuestDB, IB Gateway, and Core Engine all showing healthy states).
+- **Order Flow Lifecycle:** Test simulated execution routes through `OrderManagementSystem` using mock callbacks.
+- **Dynamic Connection Resilience:** Test reconnect loop logic under mock connection drops to ensure zero virtual thread leaks.
+- **Security Validation:** Verify that credentials config files are automatically wiped post-connection.
 
 ---
 
 ## Next Steps
 
-1. **Install IB TWS API JARs**: Download from IBKR Campus, add to `core-engine/libs/` or local repository, and uncomment `EWrapper` / connection bindings in the execution adapters.
-2. **Configure credentials**: Edit `.env` and fill in your IBKR paper trading credentials.
-3. **Run the Workspace UI**: Launch the Electron UI in development mode via `pnpm run dev` from the `workspace-ui/` directory.
-4. **Implement Strategy**: Create concrete strategy components (e.g., MeanReversionStrategy) extending the `Strategy` interface. Example starting point:
+1. **Active Local Environment Run:** Launch the complete Docker stack (`QuestDB`, `Redis`, and the containerized `core-engine`) via:
+   ```bash
+   ./scripts/start-pod.sh
+   ```
+2. **Launch Electron Client UI:** From the `workspace-ui/` directory:
+   ```bash
+   pnpm run dev
+   ```
+3. **Login & MFA Verification:** On the UI Login screen, type your credentials and select your mode. Monitor the terminal logging or the VNC view (inside the iframe) to see the IBC container launch and complete the MFA push approval on your device.
+4. **Implement Strategy Logic:** Create strategy components extending the `Strategy` interface. Example:
+   ```java
+   @Component
+   public class MeanReversionStrategy implements Strategy {
+       // Subscribe to SPY, compute 20-period SMA on ticks,
+       // generate BUY signal when price < SMA - 2σ
+   }
+   ```
 
-```java
-@Component
-public class MeanReversionStrategy implements Strategy {
-    // Subscribe to SPY, compute 20-period SMA on ticks,
-    // generate BUY signal when price < SMA - 2σ
-}
-```

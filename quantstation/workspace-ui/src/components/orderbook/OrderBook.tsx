@@ -8,11 +8,13 @@ import { useStore } from '../../store/useStore'
  * price flash animations on tick updates.
  */
 export const OrderBook: React.FC = () => {
-  const { ticks, activeSymbol } = useStore()
+  const { ticks, activeSymbol, watchlist } = useStore()
   const tick = ticks[activeSymbol]
 
   // Generate mock depth levels around the current price for visual demo
-  const currentPrice = tick?.price ?? 450.0
+  const watchlistItem = watchlist.find((item) => item.symbol === activeSymbol)
+  const fallbackPrice = watchlistItem && watchlistItem.prevClose > 0 ? watchlistItem.prevClose : 450.0
+  const currentPrice = tick?.price ?? fallbackPrice
   const levels = 20
 
   const generateLevels = (basePrice: number) => {

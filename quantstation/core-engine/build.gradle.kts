@@ -19,6 +19,9 @@ repositories {
 }
 
 dependencies {
+    // ── Local TWS API JARs ────────────────────────────
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
+
     // ── Spring Boot Starters ──────────────────────────
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")

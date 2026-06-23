@@ -42,6 +42,26 @@ public interface MarketDataProvider {
     String getProviderName();
 
     /**
+     * Fetch historical bars from the provider.
+     */
+    java.util.concurrent.CompletableFuture<java.util.List<com.quantstation.domain.BarData>> fetchHistoricalBars(
+            String symbol, String duration, String barSize);
+
+    /**
+     * Get last known tick for a symbol (if available).
+     */
+    default Tick getLastTick(String symbol) {
+        return null;
+    }
+
+    /**
+     * Get all last known ticks.
+     */
+    default java.util.Map<String, Tick> getLastTicks() {
+        return java.util.Map.of();
+    }
+
+    /**
      * Functional interface for tick callbacks.
      */
     @FunctionalInterface

@@ -1,7 +1,6 @@
 import React from 'react'
+import { useMarketStream } from '../../hooks/useMarketStream'
 import { WatchlistPanel } from './WatchlistPanel'
-import { NewsFeed } from './NewsFeed'
-import { EconomicCalendar } from './EconomicCalendar'
 import { DailyChecklist } from './DailyChecklist'
 
 /**
@@ -10,6 +9,9 @@ import { DailyChecklist } from './DailyChecklist'
  * Renders a 2x2 grid dashboard for watchlists, news, economic calendar, and notes.
  */
 export const IntelDashboard: React.FC = () => {
+  // Initialize WebSocket connection for the secondary window
+  useMarketStream()
+
   return (
     <div style={{
       display: 'flex',
@@ -52,11 +54,11 @@ export const IntelDashboard: React.FC = () => {
         </span>
       </div>
 
-      {/* ── 2x2 Grid Layout ───────────────────────── */}
+      {/* ── 2-Column Grid Layout ───────────────────── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gridTemplateRows: '1fr 1fr',
+        gridTemplateColumns: '1.2fr 0.8fr',
+        gridTemplateRows: '1fr',
         gap: 'var(--qs-gap-sm, 12px)',
         padding: 'var(--qs-gap-sm, 12px)',
         flexGrow: 1,
@@ -74,30 +76,10 @@ export const IntelDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Real-time News Feed */}
-        <div className="panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div className="panel__header">
-            <span className="panel__title">❷ Real-Time News</span>
-          </div>
-          <div className="panel__content" style={{ padding: 0, overflow: 'hidden' }}>
-            <NewsFeed />
-          </div>
-        </div>
-
-        {/* Economic Calendar */}
-        <div className="panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div className="panel__header">
-            <span className="panel__title">❸ Economic Calendar & Catalysts</span>
-          </div>
-          <div className="panel__content" style={{ padding: 0, overflow: 'hidden' }}>
-            <EconomicCalendar />
-          </div>
-        </div>
-
         {/* Daily Checklist & Targets */}
         <div className="panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div className="panel__header">
-            <span className="panel__title">❹ Daily Targets & Checklist</span>
+            <span className="panel__title">❷ Daily Targets & Checklist</span>
           </div>
           <div className="panel__content" style={{ padding: 0, overflow: 'hidden' }}>
             <DailyChecklist />

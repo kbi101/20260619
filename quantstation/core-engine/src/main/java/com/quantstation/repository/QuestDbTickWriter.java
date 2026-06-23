@@ -99,13 +99,19 @@ public class QuestDbTickWriter {
         try {
             Tick tick;
             while (count < batchSize && (tick = tickBuffer.poll()) != null) {
-                sender.table("ticks")
+                Sender row = sender.table("ticks")
                         .symbol("symbol", tick.symbol())
                         .doubleColumn("price", tick.price())
-                        .longColumn("size", tick.size())
-                        .symbol("exchange", tick.exchange() != null ? tick.exchange() : "")
-                        .symbol("conditions", tick.conditions() != null ? tick.conditions() : "")
-                        .at(tick.timestamp().truncatedTo(ChronoUnit.MICROS));
+                        .longColumn("size", tick.size());
+                
+                if (tick.exchange() != null && !tick.exchange().isEmpty()) {
+                    row = row.symbol("exchange", tick.exchange());
+                }
+                if (tick.conditions() != null && !tick.conditions().isEmpty()) {
+                    row = row.symbol("conditions", tick.conditions());
+                }
+                
+                row.at(tick.timestamp().truncatedTo(ChronoUnit.MICROS));
                 count++;
             }
             sender.flush();

@@ -61,38 +61,6 @@ services:
     networks:
       - quantstation-net
 
-  # ─── IB Gateway: Headless Execution Gateway ──────────────────
-  ib-gateway:
-    image: gnzsnz/ib-gateway:latest
-    container_name: quantstation-ib-gateway
-    hostname: ib-gateway
-    ports:
-      - "4001:4001"   # Live trading API
-      - "4002:4002"   # Paper trading API
-      - "5990:5900"   # VNC (debug GUI, optional)
-    environment:
-      TWS_USERID: ${TWS_USERID:-}
-      TWS_PASSWORD: ${TWS_PASSWORD:-}
-      TRADING_MODE: ${TRADING_MODE:-paper}
-      TWS_ACCEPT_INCOMING: "true"
-      READ_ONLY_API: ${READ_ONLY_API:-false}
-      VNC_SERVER_PASSWORD: ${VNC_PASSWORD:-quantstation}
-    volumes:
-      - ./ib-gateway/jts.ini:/root/Jts/jts.ini:ro
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-    healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 4002 || exit 1"]
-      interval: 15s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
-    restart: unless-stopped
-    networks:
-      - quantstation-net
-
   # ─── Core Engine: Spring Boot Backend ─────────────────────────
   core-engine:
     build:
@@ -100,6 +68,8 @@ services:
       dockerfile: Dockerfile
     container_name: quantstation-core-engine
     hostname: core-engine
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8080:8080"   # REST API / STOMP WS
       - "8081:8081"   # Actuator
@@ -111,7 +81,8 @@ services:
       - TWS_PASSWORD=${TWS_PASSWORD}
       - REDIS_HOST=redis
       - QUESTDB_HOST=questdb
-      - IBKR_HOST=ib-gateway
+      - IBKR_HOST=${IBKR_HOST:-ib-gateway}
+      - IBKR_PORT=${IBKR_PORT:-4004}
     depends_on:
       redis:
         condition: service_healthy

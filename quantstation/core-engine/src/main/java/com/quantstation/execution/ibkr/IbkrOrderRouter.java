@@ -1,5 +1,8 @@
 package com.quantstation.execution.ibkr;
 
+import com.ib.client.Contract;
+import com.ib.client.Decimal;
+import com.ib.client.OrderCancel;
 import com.quantstation.domain.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,16 +10,6 @@ import org.springframework.stereotype.Component;
 
 /**
  * Translates QuantStation Order objects into IB API calls.
- *
- * <p>Responsible for:
- * <ul>
- *   <li>Converting Order → IB Contract + IB Order</li>
- *   <li>Submitting orders via EClientSocket</li>
- *   <li>Handling cancel requests</li>
- * </ul>
- *
- * <p>This operates on the <strong>hot trading path</strong> and should avoid
- * unnecessary allocations or blocking operations.
  */
 @Component
 public class IbkrOrderRouter {
@@ -49,10 +42,14 @@ public class IbkrOrderRouter {
         log.info("IbkrOrderRouter: Routing order {} → IB orderId {}",
                 order.getOrderId(), ibOrderId);
 
-        // TODO: Implement with TWS API:
-        // Contract contract = buildContract(order);
-        // com.ib.client.Order ibOrder = buildIbOrder(order);
-        // client.placeOrder(ibOrderId, contract, ibOrder);
+        try {
+            Contract contract = buildContract(order);
+            com.ib.client.Order ibOrder = buildIbOrder(order);
+            connectionManager.getClient().placeOrder(ibOrderId, contract, ibOrder);
+        } catch (Exception e) {
+            log.error("IbkrOrderRouter: Failed to place order {} on IB client", order.getOrderId(), e);
+            throw new RuntimeException("Failed to place order: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -68,27 +65,38 @@ public class IbkrOrderRouter {
         log.info("IbkrOrderRouter: Cancelling order {} (IB orderId {})",
                 order.getOrderId(), order.getIbkrOrderId());
 
-        // TODO: client.cancelOrder(order.getIbkrOrderId(), "");
+        try {
+            connectionManager.getClient().cancelOrder(order.getIbkrOrderId(), new OrderCancel());
+        } catch (Exception e) {
+            log.error("IbkrOrderRouter: Failed to cancel order {}", order.getOrderId(), e);
+        }
     }
 
-    // ── Contract/Order Builders (TODO: implement with TWS API) ──
+    private Contract buildContract(Order order) {
+        Contract contract = new Contract();
+        contract.symbol(order.getSymbol());
+        contract.secType("STK");
+        contract.exchange("SMART");
+        contract.currency("USD");
+        return contract;
+    }
 
-    // private Contract buildContract(Order order) {
-    //     Contract contract = new Contract();
-    //     contract.symbol(order.getSymbol());
-    //     contract.secType("STK");
-    //     contract.exchange("SMART");
-    //     contract.currency("USD");
-    //     return contract;
-    // }
+    private String mapOrderType(Order.OrderType type) {
+        return switch (type) {
+            case MARKET -> "MKT";
+            case LIMIT -> "LMT";
+            case STOP -> "STP";
+            case STOP_LIMIT -> "STP LMT";
+        };
+    }
 
-    // private com.ib.client.Order buildIbOrder(Order order) {
-    //     com.ib.client.Order ibOrder = new com.ib.client.Order();
-    //     ibOrder.action(order.getSide() == Order.Side.BUY ? "BUY" : "SELL");
-    //     ibOrder.totalQuantity(Decimal.get(order.getQuantity()));
-    //     ibOrder.orderType(mapOrderType(order.getOrderType()));
-    //     if (order.getLimitPrice() > 0) ibOrder.lmtPrice(order.getLimitPrice());
-    //     if (order.getStopPrice() > 0) ibOrder.auxPrice(order.getStopPrice());
-    //     return ibOrder;
-    // }
+    private com.ib.client.Order buildIbOrder(Order order) {
+        com.ib.client.Order ibOrder = new com.ib.client.Order();
+        ibOrder.action(order.getSide() == Order.Side.BUY ? "BUY" : "SELL");
+        ibOrder.totalQuantity(Decimal.get(order.getQuantity()));
+        ibOrder.orderType(mapOrderType(order.getOrderType()));
+        if (order.getLimitPrice() > 0) ibOrder.lmtPrice(order.getLimitPrice());
+        if (order.getStopPrice() > 0) ibOrder.auxPrice(order.getStopPrice());
+        return ibOrder;
+    }
 }

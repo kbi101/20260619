@@ -59,11 +59,11 @@ quantstation:
   # ── IB Gateway ─────────────────────────────────────
   ibkr:
     host: ${IBKR_HOST:localhost}
-    port: 4002
+    port: ${IBKR_PORT:4002}
     client-id: 1
     connect-timeout-ms: 5000
     reconnect-delay-ms: 3000
-    max-reconnect-attempts: 10
+    max-reconnect-attempts: 999999
 
   # ── Alpha Vantage ──────────────────────────────────
   alphavantage:
@@ -99,7 +99,7 @@ spring:
 
 quantstation:
   ibkr:
-    port: 4002
+    port: ${IBKR_PORT:4002}
 
 ---
 # ── Live Trading Profile ─────────────────────────────
@@ -110,6 +110,6 @@ spring:
 
 quantstation:
   ibkr:
-    port: 4001
+    port: ${IBKR_PORT:4001}
   risk:
     require-confirmation-above: 5000.0

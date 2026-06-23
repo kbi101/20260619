@@ -13,6 +13,7 @@ export interface Tick {
   askPrice: number
   bidSize: number
   askSize: number
+  prevClose: number
   timestamp: string
 }
 

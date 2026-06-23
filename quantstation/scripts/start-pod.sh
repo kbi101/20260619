@@ -91,9 +91,6 @@ wait_for_service "Redis" \
 wait_for_service "QuestDB" \
   "curl -sf http://localhost:9000/exec?query=SELECT+1" 45
 
-wait_for_service "IB Gateway" \
-  "nc -z localhost 4002" 90 || warn "IB Gateway not ready (check credentials)"
-
 wait_for_service "Core Engine" \
   "curl -sf http://localhost:8081/actuator/health | grep -q UP" 60
 

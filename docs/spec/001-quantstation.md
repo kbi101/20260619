@@ -197,12 +197,12 @@ com.quantstation/
 
 | Property           | Value                                |
 |:-------------------|:-------------------------------------|
-| **Image**          | `gnzsnz/ib-gateway:latest` (ARM64)   |
-| **Default Mode**   | Paper trading (port 4002)            |
+| **Deployment Mode**| Native Host (primary) or Docker (fallback) |
 | **API Protocol**   | TWS API (TCP socket)                 |
-| **Connection**     | Stateful TCP to IBKR servers         |
+| **Default Port**   | Live: `4001` / Paper: `4002`         |
+| **Connection**     | Stateful TCP via `host.docker.internal` (container to host) |
 
-**Role:** A lightweight Dockerized instance of Interactive Brokers Gateway. Spring Boot connects to this local container for order routing and account queries.
+**Role:** Renders/manages execution state. Spring Boot container connects back to the macOS host (via `host.docker.internal` on port 4001 or 4002) where the native Interactive Brokers Gateway GUI process runs. Can optionally fall back to a containerized headless Gateway.
 
 **IB API Integration Strategy:**
 - Official TWS API (TCP socket, callback-driven) for maximum performance
@@ -290,7 +290,27 @@ StrategyEngine.onTick()
       │           └── (follows Order Execution flow above)
       │
       └── (no signal: return to next tick)
+
+### 4.4 Dynamic Credentials & Login Flow
+
 ```
+UI (LoginScreen) ──HTTP POST (user/pass/mode)──► IbkrLoginController.login()
+                                                        │
+                                                        ▼
+                                                  IbkrConfigService.writeCredentials()
+                                                        ├── Write to config.ini
+                                                        └── IbkrConfigService.restartGateway()
+                                                                │
+                                                                ▼
+                                                  IbkrConnectionManager.startConnection()
+                                                        ├── Switch target port (4001/4002)
+                                                        └── Trigger connectWithRetry() loop
+```
+
+1. **Credentials Ingestion:** When the trader enters credentials via the UI, a POST request is sent to `/api/ibkr/login`.
+2. **Configuration Persistence:** The backend updates the shared configuration ini file with the username, password, and trading mode.
+3. **Gateway Restart & Port Re-routing:** The backend sends a restart command to the gateway command server (if containerized) and re-allocates the local connection manager target port to match the chosen mode.
+4. **Reconnection Loop Trigger:** The connection loop immediately disconnects any active session and initiates the connection check loop.
 
 ---
 
@@ -428,7 +448,7 @@ The `MarketDataProvider` interface enables hot-swappable data sources:
 | UI push cadence      | 50ms (20 FPS tick updates)         |
 | QuestDB flush cadence| 100ms batch writes                 |
 | Docker idle RAM      | ≤ 300MB (OrbStack)                 |
-| Reconnection         | Auto-reconnect with 3s backoff, 10 attempts |
+| Reconnection         | Continuous thread-safe check loop with 3s sleep |
 
 ---
 

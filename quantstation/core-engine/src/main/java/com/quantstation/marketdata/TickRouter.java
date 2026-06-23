@@ -116,8 +116,14 @@ public class TickRouter implements MarketDataProvider.TickListener {
         Map<String, Tick> snapshot = Map.copyOf(latestTicks);
         latestTicks.clear();
 
+        log.info("TickRouter: Pushing {} ticks to UI", snapshot.size());
         for (Tick tick : snapshot.values()) {
-            uiPush.pushTick(tick);
+            try {
+                uiPush.pushTick(tick);
+                log.info("TickRouter: Pushed tick for {} to UI: price={}, size={}", tick.symbol(), tick.price(), tick.size());
+            } catch (Exception e) {
+                log.error("TickRouter: Failed to push tick to UI for symbol {}", tick.symbol(), e);
+            }
         }
     }
 
