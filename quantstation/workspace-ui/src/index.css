@@ -907,3 +907,32 @@ body {
   text-align: right;
 }
 
+/* ── Indicator Toggle Buttons ─────────────────────── */
+.btn-indicator {
+  font-family: var(--qs-font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--qs-text-secondary);
+  background: var(--qs-bg-secondary);
+  border: 1px solid var(--qs-border);
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--qs-transition-fast);
+}
+
+.btn-indicator:hover {
+  background: var(--qs-bg-hover);
+  color: var(--qs-text-primary);
+  border-color: var(--qs-text-muted);
+}
+
+.btn-indicator--active {
+  background: var(--qs-blue-bg) !important;
+  color: var(--qs-blue) !important;
+  border-color: var(--qs-blue) !important;
+  box-shadow: 0 0 6px hsla(215, 80%, 56%, 0.15);
+}
+
+
