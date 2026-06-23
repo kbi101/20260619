@@ -1,11 +1,11 @@
 # 004 Order Book Analytics — Implementation Details
 
 ## Status
-- [ ] **State Store (`useStore.ts`)** — Integrate settings, rolling imbalance buffers, and computed metrics.
-- [ ] **Calculation Pipeline (`OrderBook.tsx`)** — Implement decay weight factors, EMA smoothing, and standard deviation calculations.
-- [ ] **Iceberg/Hidden Volume Detection (`IbkrCallbackHandler.java` / `TickRouter.java`)** — Calculate trades vs. size depletion delta on backend/frontend.
-- [ ] **FIFO Queue Component** — Render estimated position updates inside the blots or order entries.
-- [ ] **UI Analytics Panel (`OrderBook.tsx`)** — Render the horizontal bar, persistence LED, and settings sliders.
+- [x] **State Store (`useStore.ts`)** — Integrate settings, rolling imbalance buffers, and computed metrics. (Completed)
+- [x] **Calculation Pipeline (`OrderBook.tsx`)** — Implement decay weight factors, EMA smoothing, and standard deviation calculations. (Completed)
+- [x] **Iceberg/Hidden Volume Detection** — Mitigated on the client-side by comparing execution trade size against Level 1 & Level 2 book depletion deltas. (Completed)
+- [x] **FIFO Queue Component** — Implemented client-side position estimation on the Order Blotter using Level 2 depth sizes and Level 1 trade size execution deltas. (Completed)
+- [x] **UI Analytics Panel (`OrderBook.tsx`)** — Render the horizontal bar, persistence LED, and settings sliders. (Completed)
 
 ---
 

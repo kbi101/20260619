@@ -148,8 +148,15 @@ public class IbkrMarketDataAdapter implements MarketDataProvider {
 
     @Override
     public CompletableFuture<List<BarData>> fetchHistoricalBars(String symbol, String duration, String barSize) {
-        log.info("IBKR MarketData: Fetching historical bars for {} (duration={}, size={})", 
-                symbol, duration, barSize);
+        String queryDuration = duration;
+        // When RTH is disabled (useRTH = 0), a duration of "1 D" only returns data since midnight of the current day.
+        // We dynamically switch to "2 D" to capture yesterday's full regular session as well.
+        if ("1 D".equalsIgnoreCase(duration)) {
+            queryDuration = "2 D";
+        }
+
+        log.info("IBKR MarketData: Fetching historical bars for {} (duration={}, queryDuration={}, size={})", 
+                symbol, duration, queryDuration, barSize);
         
         CompletableFuture<List<BarData>> future = new CompletableFuture<>();
         
@@ -175,7 +182,7 @@ public class IbkrMarketDataAdapter implements MarketDataProvider {
                     reqId,
                     contract,
                     "", // endDateTime
-                    duration,
+                    queryDuration,
                     barSize,
                     "TRADES",
                     0, // useRTH (0 = include pre/post-market, 1 = RTH only)

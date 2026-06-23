@@ -27,6 +27,7 @@ export interface Order {
   ibkrOrderId: number
   createdAt: string
   updatedAt: string
+  estimatedQueuePosition?: number
 }
 
 export interface Position {

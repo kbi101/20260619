@@ -33,6 +33,7 @@ export const OrderBlotter: React.FC = () => {
           <th>Type</th>
           <th>Qty</th>
           <th>Limit</th>
+          <th>Queue Pos</th>
           <th>Filled</th>
           <th>Avg Price</th>
           <th>Status</th>
@@ -42,7 +43,7 @@ export const OrderBlotter: React.FC = () => {
       <tbody>
         {orders.length === 0 && (
           <tr>
-            <td colSpan={10} style={{
+            <td colSpan={11} style={{
               textAlign: 'center',
               color: 'var(--qs-text-muted)',
               padding: 'var(--qs-gap-xl)',
@@ -61,6 +62,19 @@ export const OrderBlotter: React.FC = () => {
             <td>{order.orderType}</td>
             <td>{order.quantity}</td>
             <td>{order.limitPrice > 0 ? order.limitPrice.toFixed(2) : '—'}</td>
+            <td>
+              {order.orderType === 'LIMIT' || order.orderType === 'STOP_LIMIT' ? (
+                order.estimatedQueuePosition !== undefined ? (
+                  <span style={{ fontWeight: 500, color: 'var(--qs-text-primary)' }}>
+                    {order.estimatedQueuePosition.toLocaleString()} sh
+                  </span>
+                ) : (
+                  <span style={{ color: 'var(--qs-text-muted)' }}>Calculating...</span>
+                )
+              ) : (
+                <span style={{ color: 'var(--qs-text-muted)' }}>—</span>
+              )}
+            </td>
             <td>{order.filledQuantity}/{order.quantity}</td>
             <td>{order.avgFillPrice > 0 ? order.avgFillPrice.toFixed(2) : '—'}</td>
             <td>{statusBadge(order.status)}</td>

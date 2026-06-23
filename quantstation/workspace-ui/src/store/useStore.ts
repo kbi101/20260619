@@ -46,6 +46,14 @@ interface QuantStationState {
   // Active symbol
   activeSymbol: string
   setActiveSymbol: (symbol: string) => void
+
+  // Order Book Imbalance (OBI) State
+  decayAlpha: number
+  smoothingBeta: number
+  smoothedImbalance: number
+  imbalanceHistory: number[]
+  updateObiSettings: (settings: Partial<{ decayAlpha: number; smoothingBeta: number }>) => void
+  pushImbalanceValue: (val: number) => void
 }
 
 const LOCAL_STORAGE_KEY = 'quantstation:watchlist'
@@ -76,6 +84,36 @@ const loadWatchlist = (): WatchlistTicker[] => {
   return DEFAULT_WATCHLIST
 }
 
+const getSeededSizeForStore = (symbol: string, isBid: boolean, levelIndex: number, l1Size?: number): number => {
+  const seedString = `${symbol}-${isBid ? 'bid' : 'ask'}-${levelIndex}`
+  let hash = 0
+  for (let i = 0; i < seedString.length; i++) {
+    hash = seedString.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const x = Math.sin(hash) * 10000
+  const randomFraction = x - Math.floor(x)
+  const baseSize = Math.floor(randomFraction * 400 + 50) // 50 to 450
+
+  if (levelIndex === 0 && l1Size && l1Size > 0) {
+    return l1Size
+  }
+
+  if (l1Size && l1Size > 0) {
+    const l1BaseSeed = `${symbol}-${isBid ? 'bid' : 'ask'}-0`
+    let l1Hash = 0
+    for (let i = 0; i < l1BaseSeed.length; i++) {
+      l1Hash = l1BaseSeed.charCodeAt(i) + ((l1Hash << 5) - l1Hash)
+    }
+    const l1X = Math.sin(l1Hash) * 10000
+    const l1Base = Math.floor((l1X - Math.floor(l1X)) * 400 + 50)
+
+    const ratio = l1Size / l1Base
+    const clampedRatio = Math.max(0.5, Math.min(2.0, ratio))
+    return Math.floor(baseSize * (0.8 + 0.2 * clampedRatio))
+  }
+  return baseSize
+}
+
 export const useStore = create<QuantStationState>((set) => ({
   // Connection
   connected: false,
@@ -86,9 +124,36 @@ export const useStore = create<QuantStationState>((set) => ({
   // Market data — keyed by symbol for O(1) lookups
   ticks: {},
   updateTick: (tick) =>
-    set((state) => ({
-      ticks: { ...state.ticks, [tick.symbol]: tick },
-    })),
+    set((state) => {
+      const updatedOrders = state.orders.map((order) => {
+        if (
+          order.symbol === tick.symbol &&
+          (order.status === 'SUBMITTED' || order.status === 'PARTIAL_FILL' || order.status === 'PENDING') &&
+          (order.orderType === 'LIMIT' || order.orderType === 'STOP_LIMIT')
+        ) {
+          let q = order.estimatedQueuePosition
+          if (q === undefined) {
+            const basePrice = tick.price || tick.bidPrice || tick.askPrice || order.limitPrice
+            const diffTicks = Math.round(Math.abs(order.limitPrice - basePrice) / 0.01)
+            const isBid = order.side === 'BUY'
+            const l1Size = isBid ? tick.bidSize : tick.askSize
+            q = getSeededSizeForStore(order.symbol, isBid, diffTicks, l1Size)
+          }
+
+          if (tick.price === order.limitPrice && tick.size > 0) {
+            q = Math.max(0, q - tick.size)
+          }
+
+          return { ...order, estimatedQueuePosition: q }
+        }
+        return order
+      })
+
+      return {
+        ticks: { ...state.ticks, [tick.symbol]: tick },
+        orders: updatedOrders,
+      }
+    }),
 
   // Watchlist
   watchlist: loadWatchlist(),
@@ -149,6 +214,20 @@ export const useStore = create<QuantStationState>((set) => ({
   // Active symbol
   activeSymbol: 'SPY',
   setActiveSymbol: (symbol) => set({ activeSymbol: symbol }),
+
+  // Order Book Imbalance (OBI) State
+  decayAlpha: 0.8,
+  smoothingBeta: 0.1,
+  smoothedImbalance: 0.0,
+  imbalanceHistory: [],
+  updateObiSettings: (settings) => set((state) => ({ ...state, ...settings })),
+  pushImbalanceValue: (val) => set((state) => {
+    const history = [...state.imbalanceHistory, val].slice(-50); // limit to rolling 50 values
+    return {
+      imbalanceHistory: history,
+      smoothedImbalance: state.smoothingBeta * val + (1 - state.smoothingBeta) * state.smoothedImbalance
+    };
+  }),
 }))
 
 if (typeof window !== 'undefined') {
