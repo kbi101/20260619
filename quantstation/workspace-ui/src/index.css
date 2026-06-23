@@ -93,7 +93,7 @@ body {
 /* ── Custom Title Bar ──────────────────────────────── */
 .titlebar {
   height: var(--qs-titlebar-height);
-  background: var(--qs-bg-secondary);
+  background: var(--qs-bg-primary); /* Darker, cleaner background */
   border-bottom: 1px solid var(--qs-border);
   display: flex;
   align-items: center;
@@ -105,10 +105,10 @@ body {
 
 .titlebar__title {
   font-family: var(--qs-font-sans);
-  font-size: var(--qs-font-sm);
-  font-weight: 600;
-  color: var(--qs-text-secondary);
-  letter-spacing: 0.05em;
+  font-size: var(--qs-font-xs);
+  font-weight: 700; /* Bolder */
+  color: var(--qs-text-primary); /* Higher contrast, crisp white */
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -170,15 +170,15 @@ body {
   display: flex;
   align-items: center;
   padding: 0 var(--qs-gap-md);
-  background: var(--qs-bg-tertiary);
+  background: var(--qs-bg-primary); /* Darker recessed header background */
   border-bottom: 1px solid var(--qs-border);
   flex-shrink: 0;
 }
 
 .panel__title {
   font-size: var(--qs-font-xs);
-  font-weight: 600;
-  color: var(--qs-text-secondary);
+  font-weight: 700; /* Bolder */
+  color: var(--qs-text-primary); /* Higher contrast crisp white */
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -407,14 +407,14 @@ body {
 .blotter th {
   text-align: left;
   padding: var(--qs-gap-xs) var(--qs-gap-sm);
-  color: var(--qs-text-muted);
-  font-weight: 500;
+  color: var(--qs-text-primary); /* High contrast header text */
+  font-weight: 600; /* Bolder */
   text-transform: uppercase;
   letter-spacing: 0.06em;
   border-bottom: 1px solid var(--qs-border);
   position: sticky;
   top: 0;
-  background: var(--qs-bg-tertiary);
+  background: var(--qs-bg-primary); /* Darker recessed table header background */
 }
 
 .blotter td {

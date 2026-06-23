@@ -48,19 +48,19 @@ export const EconomicCalendar: React.FC = () => {
         <thead>
           <tr style={{
             borderBottom: '1px solid var(--qs-border)',
-            color: 'var(--qs-text-muted)',
+            color: 'var(--qs-text-primary)',
             position: 'sticky',
             top: 0,
-            background: 'var(--qs-bg-secondary)',
+            background: 'var(--qs-bg-primary)',
             height: '32px',
           }}>
-            <th style={{ padding: '0 8px', width: '60px' }}>Time</th>
-            <th style={{ padding: '0 4px', width: '40px' }}>Cur</th>
-            <th style={{ padding: '0 8px' }}>Event</th>
-            <th style={{ padding: '0 4px', width: '50px', textAlign: 'center' }}>Imp</th>
-            <th style={{ padding: '0 8px', textAlign: 'right', width: '65px' }}>Cons</th>
-            <th style={{ padding: '0 8px', textAlign: 'right', width: '65px' }}>Prev</th>
-            <th style={{ padding: '0 8px', textAlign: 'right', width: '65px' }}>Act</th>
+            <th style={{ padding: '0 8px', width: '60px', fontWeight: 600 }}>Time</th>
+            <th style={{ padding: '0 4px', width: '40px', fontWeight: 600 }}>Cur</th>
+            <th style={{ padding: '0 8px', fontWeight: 600 }}>Event</th>
+            <th style={{ padding: '0 4px', width: '50px', textAlign: 'center', fontWeight: 600 }}>Imp</th>
+            <th style={{ padding: '0 8px', textAlign: 'right', width: '65px', fontWeight: 600 }}>Cons</th>
+            <th style={{ padding: '0 8px', textAlign: 'right', width: '65px', fontWeight: 600 }}>Prev</th>
+            <th style={{ padding: '0 8px', textAlign: 'right', width: '65px', fontWeight: 600 }}>Act</th>
           </tr>
         </thead>
         <tbody>

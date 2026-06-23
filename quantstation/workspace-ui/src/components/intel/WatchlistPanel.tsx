@@ -91,18 +91,18 @@ export const WatchlistPanel: React.FC = () => {
           <thead>
             <tr style={{
               borderBottom: '1px solid var(--qs-border)',
-              color: 'var(--qs-text-muted)',
+              color: 'var(--qs-text-primary)',
               position: 'sticky',
               top: 0,
-              background: 'var(--qs-bg-secondary)',
+              background: 'var(--qs-bg-primary)',
               height: '32px',
             }}>
-              <th style={{ padding: '0 8px' }}>Symbol</th>
-              <th style={{ padding: '0 8px' }}>Name</th>
-              <th style={{ padding: '0 8px', textAlign: 'right' }}>Last</th>
-              <th style={{ padding: '0 8px', textAlign: 'right' }}>Chg %</th>
-              <th style={{ padding: '0 8px', textAlign: 'right' }}>ATR</th>
-              <th style={{ padding: '0 8px', textAlign: 'right' }}>RVOL</th>
+              <th style={{ padding: '0 8px', fontWeight: 600 }}>Symbol</th>
+              <th style={{ padding: '0 8px', fontWeight: 600 }}>Name</th>
+              <th style={{ padding: '0 8px', textAlign: 'right', fontWeight: 600 }}>Last</th>
+              <th style={{ padding: '0 8px', textAlign: 'right', fontWeight: 600 }}>Chg %</th>
+              <th style={{ padding: '0 8px', textAlign: 'right', fontWeight: 600 }}>ATR</th>
+              <th style={{ padding: '0 8px', textAlign: 'right', fontWeight: 600 }}>RVOL</th>
               <th style={{ padding: '0 8px', width: '30px', textAlign: 'center' }}></th>
             </tr>
           </thead>
