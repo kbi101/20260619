@@ -178,7 +178,7 @@ public class IbkrMarketDataAdapter implements MarketDataProvider {
                     duration,
                     barSize,
                     "TRADES",
-                    1,
+                    0, // useRTH (0 = include pre/post-market, 1 = RTH only)
                     1,
                     false,
                     null
