@@ -27,7 +27,11 @@ For each level $i$ (where $i=1$ is the best bid/ask, $i=2$ is the second best, e
 
 $$\text{Weight } W(i) = \alpha^{i-1}$$
 
-* $\alpha$ is the **decay factor** (default: $0.8$).
+* $\alpha$ is the **decay factor** (default: $0.8$, range: $0.1 - 1.0$).
+  * **Spatial Meaning:** Dictates how much weight is allocated to deeper levels of the order book relative to the best bid/ask.
+  * **High Decay ($\alpha \to 1.0$):** All visible depth levels are weighted equally. Deep book size has the same predictive importance as the best bid/ask size. Useful for finding major static support/resistance zones.
+  * **Low Decay ($\alpha \to 0.0$):** Focuses heavily on the touch price. Only orders immediately close to the market price are counted, ignoring deep block sizes.
+  * **Seeding Example ($\alpha = 0.8$):** Level 1 = $100\%$ weight, Level 2 = $80\%$ weight, Level 3 = $64\%$ weight, Level 10 = $\approx 13\%$ weight.
 * **Weighted Volumes:**
 
 $$WV_{\text{bids}} = \sum_{i=1}^{N} \text{Size}_{\text{bid}, i} \cdot \alpha^{i-1}$$
@@ -41,7 +45,11 @@ To prevent microsecond tick noise from creating false signals, the weighted imba
 
 $$I_{\text{smooth}, t} = \beta \cdot I_{\text{weighted}, t} + (1 - \beta) \cdot I_{\text{smooth}, t-1}$$
 
-* $\beta$ is the **smoothing factor** (default: $0.1$).
+* $\beta$ is the **smoothing factor** (default: $0.1$, range: $0.01 - 0.5$).
+  * **Temporal Meaning (Inertia):** Dictates how fast the OBI indicator and the UI needle respond to fresh market tick updates.
+  * **High Smoothing ($\beta \to 0.5$):** Fast response. The OBI needle reacts quickly to every tick, but will fluctuate erratically with short-term order book noise.
+  * **Low Smoothing ($\beta \to 0.01$):** High inertia / slow response. Filters out high-frequency noise and requires buying/selling pressure to persist over a longer duration before the needle shifts, showing a steady directional trend.
+  * **Smoothing Example ($\beta = 0.1$):** Each update incorporates $10\%$ of the new tick imbalance and $90\%$ of the historical smoothed value.
 
 ---
 
