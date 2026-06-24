@@ -567,6 +567,10 @@ export const PriceChart: React.FC = () => {
     const roundedTime = Math.floor(time / 60) * 60
 
     const lastBar = currentBarRef.current
+    if (lastBar && roundedTime < lastBar.time) {
+      // Ignore ticks that are older than the last loaded bar to prevent lightweight-charts crash
+      return
+    }
 
     if (lastBar && lastBar.time === roundedTime) {
       lastBar.high = Math.max(lastBar.high, tick.price)
