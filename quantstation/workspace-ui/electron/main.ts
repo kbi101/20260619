@@ -251,7 +251,7 @@ function createIntelWindow(): void {
   })
 }
 
-function createSnapshotsWindow(): void {
+function createSnapshotsWindow(show = true): void {
   snapshotsWindow = new BrowserWindow({
     width: 1920,
     height: 1080,
@@ -261,6 +261,7 @@ function createSnapshotsWindow(): void {
     backgroundColor: '#0a0a0f',
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 16 },
+    show,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -315,7 +316,7 @@ function showSnapshotsWindow(): void {
     snapshotsWindow.show()
     snapshotsWindow.focus()
   } else {
-    createSnapshotsWindow()
+    createSnapshotsWindow(true)
   }
 }
 
@@ -554,7 +555,7 @@ app.whenReady().then(() => {
   createApplicationMenu()
   createWindow()
   createIntelWindow()
-  createSnapshotsWindow()
+  createSnapshotsWindow(false)
   startWatchingSnapshots()
 })
 
@@ -565,5 +566,5 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (mainWindow === null) createWindow()
   if (intelWindow === null) createIntelWindow()
-  if (snapshotsWindow === null) createSnapshotsWindow()
+  if (snapshotsWindow === null) createSnapshotsWindow(false)
 })

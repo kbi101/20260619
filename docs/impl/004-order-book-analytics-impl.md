@@ -6,6 +6,7 @@
 - [x] **Iceberg/Hidden Volume Detection** — Mitigated on the client-side by comparing execution trade size against Level 1 & Level 2 book depletion deltas. (Completed)
 - [x] **FIFO Queue Component** — Implemented client-side position estimation on the Order Blotter using Level 2 depth sizes and Level 1 trade size execution deltas. (Completed)
 - [x] **UI Analytics Panel (`OrderBook.tsx`)** — Render the horizontal bar, persistence LED, and settings sliders. (Completed)
+- [x] **Disabled Level 2 Simulation Overlay** — Disabled simulated Level 2 order book and added a glassmorphic "Level 2 Offline" overlay blocking interaction until actual IBKR Market Depth API (`reqMktDepth`) is integrated. (Completed)
 
 ---
 

@@ -353,6 +353,18 @@ export const OrderBook: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Inactive Overlay */}
+      <div className="orderbook__overlay">
+        <div className="orderbook__overlay-content">
+          <span className="orderbook__overlay-icon">🔒</span>
+          <h3 className="orderbook__overlay-title">Level 2 Offline</h3>
+          <p className="orderbook__overlay-desc">
+            Live Level 2 market depth data requires an active IBKR subscription. Simulated data is disabled.
+          </p>
+          <span className="orderbook__overlay-badge">Inactive</span>
+        </div>
+      </div>
     </div>
   )
 }

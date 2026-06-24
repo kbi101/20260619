@@ -100,3 +100,8 @@ The Order Book component will render an **Analytics Panel** at the bottom with:
 * Sliders/inputs to adjust:
   * Decay factor $\alpha$ (range: $0.1 - 1.0$)
   * Smoothing factor $\beta$ (range: $0.01 - 0.5$)
+
+---
+
+## 4. Current Status: Level 2 Offline
+To ensure the application displays only authenticated data, the simulated/seeded Level 2 order book has been disabled. An absolute-positioned "Level 2 Offline" glassmorphism overlay is rendered over the component, blocking user interaction and indicating that simulated data is inactive until an active IBKR Market Depth subscription (using `reqMktDepth`) is integrated.

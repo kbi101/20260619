@@ -349,6 +349,22 @@ export const PriceChart: React.FC = () => {
   const adxPlusDiSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
   const adxMinusDiSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
 
+  // Refs to track whether historical data has been set on series
+  const vwapDataSetRef = useRef(false)
+  const bbDataSetRef = useRef(false)
+  const ma9DataSetRef = useRef(false)
+  const ma21DataSetRef = useRef(false)
+  const ma50DataSetRef = useRef(false)
+
+  const rsiDataSetRef = useRef(false)
+  const macdDataSetRef = useRef(false)
+  const adxDataSetRef = useRef(false)
+  const loadedSymbolRef = useRef<string | null>(null)
+  const barsRef = useRef<any[]>([])
+  const rsiDataRef = useRef<any[]>([])
+  const macdDataRef = useRef<any[]>([])
+  const adxDataRef = useRef<any[]>([])
+
   const { activeSymbol } = useStore()
   const tick = useStore((state) => state.ticks[activeSymbol])
 
@@ -357,19 +373,34 @@ export const PriceChart: React.FC = () => {
   const currentBarRef = useRef<any | null>(null)
 
   // Toggles State
-  const [showVwap, setShowVwap] = useState(false)
-  const [showBb, setShowBb] = useState(false)
-  const [showMa9, setShowMa9] = useState(false)
-  const [showMa21, setShowMa21] = useState(false)
-  const [showMa50, setShowMa50] = useState(false)
+  const [showVwap, setShowVwap] = useState(() => localStorage.getItem('qs_chart_show_vwap') === 'true')
+  const [showBb, setShowBb] = useState(() => localStorage.getItem('qs_chart_show_bb') === 'true')
+  const [showMa9, setShowMa9] = useState(() => localStorage.getItem('qs_chart_show_ma9') === 'true')
+  const [showMa21, setShowMa21] = useState(() => localStorage.getItem('qs_chart_show_ma21') === 'true')
+  const [showMa50, setShowMa50] = useState(() => localStorage.getItem('qs_chart_show_ma50') === 'true')
 
-  const [showRsi, setShowRsi] = useState(false)
-  const [showMacd, setShowMacd] = useState(false)
-  const [showAdx, setShowAdx] = useState(false)
+  const [showRsi, setShowRsi] = useState(() => localStorage.getItem('qs_chart_show_rsi') === 'true')
+  const [showMacd, setShowMacd] = useState(() => localStorage.getItem('qs_chart_show_macd') === 'true')
+  const [showAdx, setShowAdx] = useState(() => localStorage.getItem('qs_chart_show_adx') === 'true')
+
+  // Persist toggles to localStorage
+  useEffect(() => {
+    localStorage.setItem('qs_chart_show_vwap', String(showVwap))
+    localStorage.setItem('qs_chart_show_bb', String(showBb))
+    localStorage.setItem('qs_chart_show_ma9', String(showMa9))
+    localStorage.setItem('qs_chart_show_ma21', String(showMa21))
+    localStorage.setItem('qs_chart_show_ma50', String(showMa50))
+    localStorage.setItem('qs_chart_show_rsi', String(showRsi))
+    localStorage.setItem('qs_chart_show_macd', String(showMacd))
+    localStorage.setItem('qs_chart_show_adx', String(showAdx))
+  }, [showVwap, showBb, showMa9, showMa21, showMa50, showRsi, showMacd, showAdx])
 
   // ── 1. Initialize Main Chart & Fetch History ─────────────
   useEffect(() => {
     if (!chartContainerRef.current) return
+
+    loadedSymbolRef.current = null
+    setBars([])
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -377,6 +408,7 @@ export const PriceChart: React.FC = () => {
         textColor: '#8f95a0',
         fontFamily: "'Inter', -apple-system, sans-serif",
         fontSize: 11,
+        attributionLogo: false,
       },
       grid: {
         vertLines: { color: 'rgba(28, 32, 48, 0.5)' },
@@ -389,6 +421,7 @@ export const PriceChart: React.FC = () => {
       },
       rightPriceScale: {
         borderColor: '#202432',
+        minimumWidth: 80,
       },
       timeScale: {
         borderColor: '#202432',
@@ -433,6 +466,7 @@ export const PriceChart: React.FC = () => {
           }))
 
           setBars(mappedBars)
+          barsRef.current = mappedBars
           candleSeries.setData(mappedBars as any)
 
           const volumes = data.map((b: any) => ({
@@ -451,6 +485,7 @@ export const PriceChart: React.FC = () => {
             close: lastBar.close,
             volume: lastBar.volume || 0,
           }
+          loadedSymbolRef.current = activeSymbol
         }
       })
       .catch((err) => {
@@ -491,12 +526,42 @@ export const PriceChart: React.FC = () => {
         adxChartRef.current.remove()
         adxChartRef.current = null
       }
+
+      // Reset all series references to prevent stale references on chart recreation
+      candleSeriesRef.current = null
+      volumeSeriesRef.current = null
+      vwapSeriesRef.current = null
+      bbUpperSeriesRef.current = null
+      bbMiddleSeriesRef.current = null
+      bbLowerSeriesRef.current = null
+      ma9SeriesRef.current = null
+      ma21SeriesRef.current = null
+      ma50SeriesRef.current = null
+
+      rsiSeriesRef.current = null
+      macdLineSeriesRef.current = null
+      macdSignalSeriesRef.current = null
+      macdHistSeriesRef.current = null
+      adxSeriesRef.current = null
+      adxPlusDiSeriesRef.current = null
+      adxMinusDiSeriesRef.current = null
+
+      // Reset data-set tracking flags
+      vwapDataSetRef.current = false
+      bbDataSetRef.current = false
+      ma9DataSetRef.current = false
+      ma21DataSetRef.current = false
+      ma50DataSetRef.current = false
+      rsiDataSetRef.current = false
+      macdDataSetRef.current = false
+      adxDataSetRef.current = false
     }
   }, [activeSymbol])
 
   // ── 2. Stream Live Tick Data into Current Minute Bar ──
   useEffect(() => {
     if (!tick || !candleSeriesRef.current || !volumeSeriesRef.current) return
+    if (loadedSymbolRef.current !== activeSymbol) return
 
     const time = Math.floor(new Date(tick.timestamp).getTime() / 1000)
     const roundedTime = Math.floor(time / 60) * 60
@@ -555,6 +620,7 @@ export const PriceChart: React.FC = () => {
           volume: tick.size,
         })
       }
+      barsRef.current = updated
       return updated
     })
   }, [tick])
@@ -562,7 +628,7 @@ export const PriceChart: React.FC = () => {
   // ── 3. Overlay Series (VWAP, Bollinger Bands, MAs) ──
   useEffect(() => {
     const chart = chartRef.current
-    if (!chart || bars.length === 0) return
+    if (!chart || bars.length === 0 || loadedSymbolRef.current !== activeSymbol) return
 
     // VWAP
     if (showVwap) {
@@ -574,12 +640,22 @@ export const PriceChart: React.FC = () => {
         })
       }
       const vwapVals = calculateVWAP(bars)
-      vwapSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: vwapVals[i] })).filter((d) => !isNaN(d.value)))
+      const lastIdx = bars.length - 1
+      const lastTime = bars[lastIdx].time
+      const lastVal = vwapVals[lastIdx]
+
+      if (!vwapDataSetRef.current) {
+        vwapSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: vwapVals[i] })).filter((d) => !isNaN(d.value)))
+        vwapDataSetRef.current = true
+      } else if (!isNaN(lastVal)) {
+        vwapSeriesRef.current.update({ time: lastTime, value: lastVal })
+      }
     } else {
       if (vwapSeriesRef.current) {
         chart.removeSeries(vwapSeriesRef.current)
         vwapSeriesRef.current = null
       }
+      vwapDataSetRef.current = false
     }
 
     // Bollinger Bands
@@ -591,11 +667,23 @@ export const PriceChart: React.FC = () => {
       }
       const closePrices = bars.map((b) => b.close)
       const { middle, upper, lower } = calculateBollingerBands(closePrices)
+      const lastIdx = bars.length - 1
+      const lastTime = bars[lastIdx].time
 
       if (bbUpperSeriesRef.current && bbMiddleSeriesRef.current && bbLowerSeriesRef.current) {
-        bbUpperSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: upper[i] })).filter((d) => !isNaN(d.value)))
-        bbMiddleSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: middle[i] })).filter((d) => !isNaN(d.value)))
-        bbLowerSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: lower[i] })).filter((d) => !isNaN(d.value)))
+        if (!bbDataSetRef.current) {
+          bbUpperSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: upper[i] })).filter((d) => !isNaN(d.value)))
+          bbMiddleSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: middle[i] })).filter((d) => !isNaN(d.value)))
+          bbLowerSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: lower[i] })).filter((d) => !isNaN(d.value)))
+          bbDataSetRef.current = true
+        } else {
+          const uVal = upper[lastIdx]
+          const mVal = middle[lastIdx]
+          const lVal = lower[lastIdx]
+          if (!isNaN(uVal)) bbUpperSeriesRef.current.update({ time: lastTime, value: uVal })
+          if (!isNaN(mVal)) bbMiddleSeriesRef.current.update({ time: lastTime, value: mVal })
+          if (!isNaN(lVal)) bbLowerSeriesRef.current.update({ time: lastTime, value: lVal })
+        }
       }
     } else {
       if (bbUpperSeriesRef.current) {
@@ -606,6 +694,7 @@ export const PriceChart: React.FC = () => {
         bbMiddleSeriesRef.current = null
         bbLowerSeriesRef.current = null
       }
+      bbDataSetRef.current = false
     }
 
     // MA 9
@@ -615,12 +704,22 @@ export const PriceChart: React.FC = () => {
       }
       const closePrices = bars.map((b) => b.close)
       const ema9 = calculateEMA(closePrices, 9)
-      ma9SeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: ema9[i] })).filter((d) => !isNaN(d.value)))
+      const lastIdx = bars.length - 1
+      const lastTime = bars[lastIdx].time
+      const lastVal = ema9[lastIdx]
+
+      if (!ma9DataSetRef.current) {
+        ma9SeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: ema9[i] })).filter((d) => !isNaN(d.value)))
+        ma9DataSetRef.current = true
+      } else if (!isNaN(lastVal)) {
+        ma9SeriesRef.current.update({ time: lastTime, value: lastVal })
+      }
     } else {
       if (ma9SeriesRef.current) {
         chart.removeSeries(ma9SeriesRef.current)
         ma9SeriesRef.current = null
       }
+      ma9DataSetRef.current = false
     }
 
     // MA 21
@@ -630,12 +729,22 @@ export const PriceChart: React.FC = () => {
       }
       const closePrices = bars.map((b) => b.close)
       const ema21 = calculateEMA(closePrices, 21)
-      ma21SeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: ema21[i] })).filter((d) => !isNaN(d.value)))
+      const lastIdx = bars.length - 1
+      const lastTime = bars[lastIdx].time
+      const lastVal = ema21[lastIdx]
+
+      if (!ma21DataSetRef.current) {
+        ma21SeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: ema21[i] })).filter((d) => !isNaN(d.value)))
+        ma21DataSetRef.current = true
+      } else if (!isNaN(lastVal)) {
+        ma21SeriesRef.current.update({ time: lastTime, value: lastVal })
+      }
     } else {
       if (ma21SeriesRef.current) {
         chart.removeSeries(ma21SeriesRef.current)
         ma21SeriesRef.current = null
       }
+      ma21DataSetRef.current = false
     }
 
     // MA 50
@@ -645,18 +754,28 @@ export const PriceChart: React.FC = () => {
       }
       const closePrices = bars.map((b) => b.close)
       const ema50 = calculateEMA(closePrices, 50)
-      ma50SeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: ema50[i] })).filter((d) => !isNaN(d.value)))
+      const lastIdx = bars.length - 1
+      const lastTime = bars[lastIdx].time
+      const lastVal = ema50[lastIdx]
+
+      if (!ma50DataSetRef.current) {
+        ma50SeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: ema50[i] })).filter((d) => !isNaN(d.value)))
+        ma50DataSetRef.current = true
+      } else if (!isNaN(lastVal)) {
+        ma50SeriesRef.current.update({ time: lastTime, value: lastVal })
+      }
     } else {
       if (ma50SeriesRef.current) {
         chart.removeSeries(ma50SeriesRef.current)
         ma50SeriesRef.current = null
       }
+      ma50DataSetRef.current = false
     }
-  }, [bars, showVwap, showBb, showMa9, showMa21, showMa50])
+  }, [bars, showVwap, showBb, showMa9, showMa21, showMa50, activeSymbol])
 
-  // ── 4. Sub-pane: RSI Chart ───────────────────────
+  // ── 4a. Initialize RSI Chart ───────────────────────
   useEffect(() => {
-    if (!showRsi || bars.length === 0) {
+    if (!showRsi) {
       if (rsiChartRef.current) {
         rsiChartRef.current.remove()
         rsiChartRef.current = null
@@ -667,93 +786,117 @@ export const PriceChart: React.FC = () => {
 
     if (!rsiContainerRef.current) return
 
-    let rsiChart = rsiChartRef.current
-    if (!rsiChart) {
-      const newChart = createChart(rsiContainerRef.current, {
-        layout: {
-          background: { type: ColorType.Solid, color: '#10121a' },
-          textColor: '#8f95a0',
-          fontFamily: "'Inter', -apple-system, sans-serif",
-          fontSize: 10,
-        },
-        grid: {
-          vertLines: { color: 'rgba(28, 32, 48, 0.4)' },
-          horzLines: { color: 'rgba(28, 32, 48, 0.4)' },
-        },
-        crosshair: {
-          mode: 0,
-          vertLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
-          horzLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
-        },
-        rightPriceScale: {
-          borderColor: '#202432',
-        },
-        timeScale: {
-          visible: false,
-          borderColor: '#202432',
-        },
-        handleScroll: { vertTouchDrag: false },
-      })
+    const newChart = createChart(rsiContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: '#10121a' },
+        textColor: '#8f95a0',
+        fontFamily: "'Inter', -apple-system, sans-serif",
+        fontSize: 10,
+        attributionLogo: false,
+      },
+      grid: {
+        vertLines: { color: 'rgba(28, 32, 48, 0.4)' },
+        horzLines: { color: 'rgba(28, 32, 48, 0.4)' },
+      },
+      crosshair: {
+        mode: 0,
+        vertLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
+        horzLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
+      },
+      rightPriceScale: {
+        borderColor: '#202432',
+        minimumWidth: 80,
+      },
+      timeScale: {
+        visible: false,
+        borderColor: '#202432',
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      handleScroll: { vertTouchDrag: false },
+    })
 
-      const rsiSeries = newChart.addLineSeries({
-        color: '#9062eb',
-        lineWidth: 2,
-        title: 'RSI(14)',
-      })
+    const rsiSeries = newChart.addLineSeries({
+      color: '#9062eb',
+      lineWidth: 2,
+      title: 'RSI(14)',
+    })
 
-      rsiSeries.createPriceLine({
-        price: 70,
-        color: 'rgba(242, 54, 69, 0.4)',
-        lineWidth: 1,
-        lineStyle: 3,
-        axisLabelVisible: true,
-        title: 'OB',
-      })
-      rsiSeries.createPriceLine({
-        price: 30,
-        color: 'rgba(38, 208, 124, 0.4)',
-        lineWidth: 1,
-        lineStyle: 3,
-        axisLabelVisible: true,
-        title: 'OS',
-      })
+    rsiSeries.createPriceLine({
+      price: 70,
+      color: 'rgba(242, 54, 69, 0.4)',
+      lineWidth: 1,
+      lineStyle: 3,
+      axisLabelVisible: true,
+      title: 'OB',
+    })
+    rsiSeries.createPriceLine({
+      price: 30,
+      color: 'rgba(38, 208, 124, 0.4)',
+      lineWidth: 1,
+      lineStyle: 3,
+      axisLabelVisible: true,
+      title: 'OS',
+    })
 
-      rsiChartRef.current = newChart
-      rsiSeriesRef.current = rsiSeries
-      rsiChart = newChart
+    rsiChartRef.current = newChart
+    rsiSeriesRef.current = rsiSeries
 
-      const mainRange = chartRef.current?.timeScale().getVisibleLogicalRange()
-      if (mainRange) {
-        newChart.timeScale().setVisibleLogicalRange(mainRange)
-      }
-
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const { width, height } = entry.contentRect
-          const range = newChart.timeScale().getVisibleLogicalRange()
-          newChart.applyOptions({ width, height })
-          if (range) {
-            newChart.timeScale().setVisibleLogicalRange(range)
-          }
-        }
-      })
-      resizeObserver.observe(rsiContainerRef.current)
-
-      return () => {
-        resizeObserver.disconnect()
-      }
+    const mainRange = chartRef.current?.timeScale().getVisibleLogicalRange()
+    if (mainRange) {
+      newChart.timeScale().setVisibleLogicalRange(mainRange)
     }
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        const range = newChart.timeScale().getVisibleLogicalRange()
+        newChart.applyOptions({ width, height })
+        if (range) {
+          newChart.timeScale().setVisibleLogicalRange(range)
+        }
+      }
+    })
+    resizeObserver.observe(rsiContainerRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+      if (rsiChartRef.current) {
+        rsiChartRef.current.remove()
+        rsiChartRef.current = null
+        rsiSeriesRef.current = null
+      }
+      rsiDataSetRef.current = false
+    }
+  }, [showRsi, activeSymbol])
+
+  // ── 4b. Update RSI Data ────────────────────────────
+  useEffect(() => {
+    if (!showRsi || bars.length === 0 || !rsiSeriesRef.current || loadedSymbolRef.current !== activeSymbol) return
 
     const closePrices = bars.map((b) => b.close)
     const rsiVals = calculateRSI(closePrices, 14)
-    if (rsiSeriesRef.current) {
-      rsiSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: rsiVals[i] })).filter((d) => !isNaN(d.value)))
-    }
-  }, [bars, showRsi])
+    const lastIdx = bars.length - 1
+    const lastTime = bars[lastIdx].time
+    const lastVal = rsiVals[lastIdx]
 
-  // ── 5. Sub-pane: MACD Chart ──────────────────────
+    const rsiData = bars.map((b, i) => {
+      const val = rsiVals[i]
+      return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+    })
+    rsiDataRef.current = rsiData
+
+    if (!rsiDataSetRef.current) {
+      rsiSeriesRef.current.setData(rsiData)
+      rsiDataSetRef.current = true
+    } else if (!isNaN(lastVal)) {
+      rsiSeriesRef.current.update({ time: lastTime, value: lastVal })
+    }
+  }, [bars, showRsi, activeSymbol])
+
+  // ── 5a. Initialize MACD Chart ──────────────────────
   useEffect(() => {
-    if (!showMacd || bars.length === 0) {
+    if (!showMacd) {
       if (macdChartRef.current) {
         macdChartRef.current.remove()
         macdChartRef.current = null
@@ -766,89 +909,136 @@ export const PriceChart: React.FC = () => {
 
     if (!macdContainerRef.current) return
 
-    let macdChart = macdChartRef.current
-    if (!macdChart) {
-      const newChart = createChart(macdContainerRef.current, {
-        layout: {
-          background: { type: ColorType.Solid, color: '#10121a' },
-          textColor: '#8f95a0',
-          fontFamily: "'Inter', -apple-system, sans-serif",
-          fontSize: 10,
-        },
-        grid: {
-          vertLines: { color: 'rgba(28, 32, 48, 0.4)' },
-          horzLines: { color: 'rgba(28, 32, 48, 0.4)' },
-        },
-        crosshair: {
-          mode: 0,
-          vertLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
-          horzLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
-        },
-        rightPriceScale: {
-          borderColor: '#202432',
-        },
-        timeScale: {
-          visible: false,
-          borderColor: '#202432',
-        },
-        handleScroll: { vertTouchDrag: false },
-      })
+    const newChart = createChart(macdContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: '#10121a' },
+        textColor: '#8f95a0',
+        fontFamily: "'Inter', -apple-system, sans-serif",
+        fontSize: 10,
+        attributionLogo: false,
+      },
+      grid: {
+        vertLines: { color: 'rgba(28, 32, 48, 0.4)' },
+        horzLines: { color: 'rgba(28, 32, 48, 0.4)' },
+      },
+      crosshair: {
+        mode: 0,
+        vertLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
+        horzLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
+      },
+      rightPriceScale: {
+        borderColor: '#202432',
+        minimumWidth: 80,
+      },
+      timeScale: {
+        visible: false,
+        borderColor: '#202432',
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      handleScroll: { vertTouchDrag: false },
+    })
 
-      const macdLineSeries = newChart.addLineSeries({ color: '#29b6f6', lineWidth: 1, title: 'MACD' })
-      const macdSignalSeries = newChart.addLineSeries({ color: '#ff7043', lineWidth: 1, title: 'Signal' })
-      const macdHistSeries = newChart.addHistogramSeries({
-        priceFormat: { type: 'volume' },
-      })
+    const macdLineSeries = newChart.addLineSeries({ color: '#29b6f6', lineWidth: 1, title: 'MACD' })
+    const macdSignalSeries = newChart.addLineSeries({ color: '#ff7043', lineWidth: 1, title: 'Signal' })
+    const macdHistSeries = newChart.addHistogramSeries({
+      priceFormat: { type: 'volume' },
+      priceScaleId: 'macdVolume',
+    })
+    newChart.priceScale('macdVolume').applyOptions({
+      scaleMargins: { top: 0.6, bottom: 0.1 },
+    })
 
-      macdChartRef.current = newChart
-      macdLineSeriesRef.current = macdLineSeries
-      macdSignalSeriesRef.current = macdSignalSeries
-      macdHistSeriesRef.current = macdHistSeries
-      macdChart = newChart
+    macdChartRef.current = newChart
+    macdLineSeriesRef.current = macdLineSeries
+    macdSignalSeriesRef.current = macdSignalSeries
+    macdHistSeriesRef.current = macdHistSeries
 
-      const mainRange = chartRef.current?.timeScale().getVisibleLogicalRange()
-      if (mainRange) {
-        newChart.timeScale().setVisibleLogicalRange(mainRange)
-      }
-
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const { width, height } = entry.contentRect
-          const range = newChart.timeScale().getVisibleLogicalRange()
-          newChart.applyOptions({ width, height })
-          if (range) {
-            newChart.timeScale().setVisibleLogicalRange(range)
-          }
-        }
-      })
-      resizeObserver.observe(macdContainerRef.current)
-
-      return () => {
-        resizeObserver.disconnect()
-      }
+    const mainRange = chartRef.current?.timeScale().getVisibleLogicalRange()
+    if (mainRange) {
+      newChart.timeScale().setVisibleLogicalRange(mainRange)
     }
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        const range = newChart.timeScale().getVisibleLogicalRange()
+        newChart.applyOptions({ width, height })
+        if (range) {
+          newChart.timeScale().setVisibleLogicalRange(range)
+        }
+      }
+    })
+    resizeObserver.observe(macdContainerRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+      if (macdChartRef.current) {
+        macdChartRef.current.remove()
+        macdChartRef.current = null
+        macdLineSeriesRef.current = null
+        macdSignalSeriesRef.current = null
+        macdHistSeriesRef.current = null
+      }
+      macdDataSetRef.current = false
+    }
+  }, [showMacd, activeSymbol])
+
+  // ── 5b. Update MACD Data ───────────────────────────
+  useEffect(() => {
+    if (!showMacd || bars.length === 0 || !macdLineSeriesRef.current || !macdSignalSeriesRef.current || !macdHistSeriesRef.current || loadedSymbolRef.current !== activeSymbol) return
 
     const closePrices = bars.map((b) => b.close)
     const { macdLine, signalLine, histogram } = calculateMACD(closePrices)
+    const lastIdx = bars.length - 1
+    const lastTime = bars[lastIdx].time
 
-    if (macdLineSeriesRef.current && macdSignalSeriesRef.current && macdHistSeriesRef.current) {
-      macdLineSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: macdLine[i] })).filter((d) => !isNaN(d.value)))
-      macdSignalSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: signalLine[i] })).filter((d) => !isNaN(d.value)))
-      macdHistSeriesRef.current.setData(
-        bars
-          .map((b, i) => ({
-            time: b.time,
-            value: histogram[i],
-            color: histogram[i] >= 0 ? 'rgba(38, 208, 124, 0.5)' : 'rgba(242, 54, 69, 0.5)',
-          }))
-          .filter((d) => !isNaN(d.value))
+    const macdData = bars.map((b, i) => {
+      const val = macdLine[i]
+      return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+    })
+    macdDataRef.current = macdData
+
+    if (!macdDataSetRef.current) {
+      macdLineSeriesRef.current.setData(macdData)
+      macdSignalSeriesRef.current.setData(
+        bars.map((b, i) => {
+          const val = signalLine[i]
+          return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+        })
       )
+      macdHistSeriesRef.current.setData(
+        bars.map((b, i) => {
+          const val = histogram[i]
+          return isNaN(val)
+            ? { time: b.time }
+            : {
+                time: b.time,
+                value: val,
+                color: val >= 0 ? 'rgba(38, 208, 124, 0.5)' : 'rgba(242, 54, 69, 0.5)',
+              }
+        })
+      )
+      macdDataSetRef.current = true
+    } else {
+      const mlVal = macdLine[lastIdx]
+      const msVal = signalLine[lastIdx]
+      const hVal = histogram[lastIdx]
+      if (!isNaN(mlVal)) macdLineSeriesRef.current.update({ time: lastTime, value: mlVal })
+      if (!isNaN(msVal)) macdSignalSeriesRef.current.update({ time: lastTime, value: msVal })
+      if (!isNaN(hVal)) {
+        macdHistSeriesRef.current.update({
+          time: lastTime,
+          value: hVal,
+          color: hVal >= 0 ? 'rgba(38, 208, 124, 0.5)' : 'rgba(242, 54, 69, 0.5)',
+        })
+      }
     }
-  }, [bars, showMacd])
+  }, [bars, showMacd, activeSymbol])
 
-  // ── 6. Sub-pane: ADX Chart ───────────────────────
+  // ── 6a. Initialize ADX Chart ───────────────────────
   useEffect(() => {
-    if (!showAdx || bars.length === 0) {
+    if (!showAdx) {
       if (adxChartRef.current) {
         adxChartRef.current.remove()
         adxChartRef.current = null
@@ -861,83 +1051,122 @@ export const PriceChart: React.FC = () => {
 
     if (!adxContainerRef.current) return
 
-    let adxChart = adxChartRef.current
-    if (!adxChart) {
-      const newChart = createChart(adxContainerRef.current, {
-        layout: {
-          background: { type: ColorType.Solid, color: '#10121a' },
-          textColor: '#8f95a0',
-          fontFamily: "'Inter', -apple-system, sans-serif",
-          fontSize: 10,
-        },
-        grid: {
-          vertLines: { color: 'rgba(28, 32, 48, 0.4)' },
-          horzLines: { color: 'rgba(28, 32, 48, 0.4)' },
-        },
-        crosshair: {
-          mode: 0,
-          vertLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
-          horzLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
-        },
-        rightPriceScale: {
-          borderColor: '#202432',
-        },
-        timeScale: {
-          visible: true,
-          borderColor: '#202432',
-        },
-        handleScroll: { vertTouchDrag: false },
-      })
+    const newChart = createChart(adxContainerRef.current, {
+      layout: {
+        background: { type: ColorType.Solid, color: '#10121a' },
+        textColor: '#8f95a0',
+        fontFamily: "'Inter', -apple-system, sans-serif",
+        fontSize: 10,
+        attributionLogo: false,
+      },
+      grid: {
+        vertLines: { color: 'rgba(28, 32, 48, 0.4)' },
+        horzLines: { color: 'rgba(28, 32, 48, 0.4)' },
+      },
+      crosshair: {
+        mode: 0,
+        vertLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
+        horzLine: { color: 'rgba(53, 127, 233, 0.4)', width: 1, style: 2 },
+      },
+      rightPriceScale: {
+        borderColor: '#202432',
+        minimumWidth: 80,
+      },
+      timeScale: {
+        visible: true,
+        borderColor: '#202432',
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      handleScroll: { vertTouchDrag: false },
+    })
 
-      const adxSeries = newChart.addLineSeries({ color: '#ffca28', lineWidth: 2, title: 'ADX' })
-      const adxPlusDiSeries = newChart.addLineSeries({ color: 'rgba(38, 208, 124, 0.6)', lineWidth: 1, title: '+DI' })
-      const adxMinusDiSeries = newChart.addLineSeries({ color: 'rgba(242, 54, 69, 0.6)', lineWidth: 1, title: '-DI' })
+    const adxSeries = newChart.addLineSeries({ color: '#ffca28', lineWidth: 2, title: 'ADX' })
+    const adxPlusDiSeries = newChart.addLineSeries({ color: 'rgba(38, 208, 124, 0.6)', lineWidth: 1, title: '+DI' })
+    const adxMinusDiSeries = newChart.addLineSeries({ color: 'rgba(242, 54, 69, 0.6)', lineWidth: 1, title: '-DI' })
 
-      adxChartRef.current = newChart
-      adxSeriesRef.current = adxSeries
-      adxPlusDiSeriesRef.current = adxPlusDiSeries
-      adxMinusDiSeriesRef.current = adxMinusDiSeries
-      adxChart = newChart
+    adxChartRef.current = newChart
+    adxSeriesRef.current = adxSeries
+    adxPlusDiSeriesRef.current = adxPlusDiSeries
+    adxMinusDiSeriesRef.current = adxMinusDiSeries
 
-      const mainRange = chartRef.current?.timeScale().getVisibleLogicalRange()
-      if (mainRange) {
-        newChart.timeScale().setVisibleLogicalRange(mainRange)
-      }
-
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const { width, height } = entry.contentRect
-          const range = newChart.timeScale().getVisibleLogicalRange()
-          newChart.applyOptions({ width, height })
-          if (range) {
-            newChart.timeScale().setVisibleLogicalRange(range)
-          }
-        }
-      })
-      resizeObserver.observe(adxContainerRef.current)
-
-      return () => {
-        resizeObserver.disconnect()
-      }
+    const mainRange = chartRef.current?.timeScale().getVisibleLogicalRange()
+    if (mainRange) {
+      newChart.timeScale().setVisibleLogicalRange(mainRange)
     }
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        const range = newChart.timeScale().getVisibleLogicalRange()
+        newChart.applyOptions({ width, height })
+        if (range) {
+          newChart.timeScale().setVisibleLogicalRange(range)
+        }
+      }
+    })
+    resizeObserver.observe(adxContainerRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+      if (adxChartRef.current) {
+        adxChartRef.current.remove()
+        adxChartRef.current = null
+        adxSeriesRef.current = null
+        adxPlusDiSeriesRef.current = null
+        adxMinusDiSeriesRef.current = null
+      }
+      adxDataSetRef.current = false
+    }
+  }, [showAdx, activeSymbol])
+
+  // ── 6b. Update ADX Data ────────────────────────────
+  useEffect(() => {
+    if (!showAdx || bars.length === 0 || !adxSeriesRef.current || !adxPlusDiSeriesRef.current || !adxMinusDiSeriesRef.current || loadedSymbolRef.current !== activeSymbol) return
 
     const { adx: adxVals, plusDI, minusDI } = calculateADX(bars)
+    const lastIdx = bars.length - 1
+    const lastTime = bars[lastIdx].time
 
-    if (adxSeriesRef.current && adxPlusDiSeriesRef.current && adxMinusDiSeriesRef.current) {
-      adxSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: adxVals[i] })).filter((d) => !isNaN(d.value)))
-      adxPlusDiSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: plusDI[i] })).filter((d) => !isNaN(d.value)))
-      adxMinusDiSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: minusDI[i] })).filter((d) => !isNaN(d.value)))
+    const adxData = bars.map((b, i) => {
+      const val = adxVals[i]
+      return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+    })
+    adxDataRef.current = adxData
+
+    if (!adxDataSetRef.current) {
+      adxSeriesRef.current.setData(adxData)
+      adxPlusDiSeriesRef.current.setData(
+        bars.map((b, i) => {
+          const val = plusDI[i]
+          return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+        })
+      )
+      adxMinusDiSeriesRef.current.setData(
+        bars.map((b, i) => {
+          const val = minusDI[i]
+          return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+        })
+      )
+      adxDataSetRef.current = true
+    } else {
+      const adxVal = adxVals[lastIdx]
+      const plusDiVal = plusDI[lastIdx]
+      const minusDiVal = minusDI[lastIdx]
+      if (!isNaN(adxVal)) adxSeriesRef.current.update({ time: lastTime, value: adxVal })
+      if (!isNaN(plusDiVal)) adxPlusDiSeriesRef.current.update({ time: lastTime, value: plusDiVal })
+      if (!isNaN(minusDiVal)) adxMinusDiSeriesRef.current.update({ time: lastTime, value: minusDiVal })
     }
-  }, [bars, showAdx])
+  }, [bars, showAdx, activeSymbol])
 
-  // ── 7. Time Scale Synchronization Loop ───────────
+  // ── 7. Time Scale & Crosshair Synchronization Loop ───────────
   useEffect(() => {
     const active = [
-      { chart: chartRef.current, show: true },
-      { chart: rsiChartRef.current, show: showRsi },
-      { chart: macdChartRef.current, show: showMacd },
-      { chart: adxChartRef.current, show: showAdx },
-    ].filter((item) => item.chart && item.show)
+      { chart: chartRef.current, series: candleSeriesRef.current, dataRef: barsRef, show: true },
+      { chart: rsiChartRef.current, series: rsiSeriesRef.current, dataRef: rsiDataRef, show: showRsi },
+      { chart: macdChartRef.current, series: macdLineSeriesRef.current, dataRef: macdDataRef, show: showMacd },
+      { chart: adxChartRef.current, series: adxSeriesRef.current, dataRef: adxDataRef, show: showAdx },
+    ].filter((item) => item.chart && item.series && item.show)
 
     if (active.length === 0) return
 
@@ -953,29 +1182,65 @@ export const PriceChart: React.FC = () => {
 
     active.forEach((item, index) => {
       const currentChart = item.chart!
-      const otherCharts = active.filter((_, idx) => idx !== index).map((o) => o.chart!)
+      const otherCharts = active.filter((_, idx) => idx !== index)
 
-      const listener = (range: any) => {
-        otherCharts.forEach((otherChart) => {
-          if (otherChart) {
-            const currentRange = otherChart.timeScale().getVisibleLogicalRange()
+      // 7.1 Sync visible logical range (scroll / zoom)
+      const rangeListener = (range: any) => {
+        otherCharts.forEach((other) => {
+          if (other.chart) {
+            const currentRange = other.chart.timeScale().getVisibleLogicalRange()
             if (!currentRange || currentRange.from !== range.from || currentRange.to !== range.to) {
-              otherChart.timeScale().setVisibleLogicalRange(range)
+              other.chart.timeScale().setVisibleLogicalRange(range)
             }
           }
         })
       }
 
-      currentChart.timeScale().subscribeVisibleLogicalRangeChange(listener)
+      currentChart.timeScale().subscribeVisibleLogicalRangeChange(rangeListener)
       unsubs.push(() => {
-        currentChart.timeScale().unsubscribeVisibleLogicalRangeChange(listener)
+        currentChart.timeScale().unsubscribeVisibleLogicalRangeChange(rangeListener)
+      })
+
+      // 7.2 Sync crosshair move (hover markers / lines)
+      const crosshairListener = (param: any) => {
+        // Prevent feedback loops: only sync if movement was initiated by user mouse/touch
+        if (!param.sourceEvent) return
+
+        if (!param.time) {
+          otherCharts.forEach((other) => {
+            other.chart!.clearCrosshairPosition()
+          })
+          return
+        }
+
+        otherCharts.forEach((other) => {
+          if (other.chart && other.series && other.dataRef) {
+            // Find data point at current param.time
+            const dataArray = other.dataRef.current
+            const dataPoint = dataArray.find((d: any) => d.time === param.time)
+
+            if (dataPoint) {
+              const price = dataPoint.close !== undefined ? dataPoint.close : dataPoint.value
+              if (price !== undefined) {
+                other.chart.setCrosshairPosition(price, param.time, other.series)
+              }
+            } else {
+              other.chart.clearCrosshairPosition()
+            }
+          }
+        })
+      }
+
+      currentChart.subscribeCrosshairMove(crosshairListener)
+      unsubs.push(() => {
+        currentChart.unsubscribeCrosshairMove(crosshairListener)
       })
     })
 
     return () => {
       unsubs.forEach((unsub) => unsub())
     }
-  }, [bars, showRsi, showMacd, showAdx])
+  }, [showRsi, showMacd, showAdx, activeSymbol])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#10121a' }}>
@@ -1079,15 +1344,15 @@ export const PriceChart: React.FC = () => {
       </div>
 
       {/* Charts Stack */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* Main Price Chart */}
-        <div ref={chartContainerRef} style={{ flex: 2, minHeight: '200px', width: '100%', position: 'relative' }} />
+        <div ref={chartContainerRef} style={{ flex: 3, minHeight: '150px', width: '100%', position: 'relative' }} />
 
         {/* RSI Pane */}
         {showRsi && (
           <div
             ref={rsiContainerRef}
-            style={{ height: '110px', minHeight: '110px', width: '100%', borderTop: '1px solid var(--qs-border)' }}
+            style={{ flex: 1, minHeight: '80px', width: '100%', borderTop: '1px solid var(--qs-border)' }}
           />
         )}
 
@@ -1095,7 +1360,7 @@ export const PriceChart: React.FC = () => {
         {showMacd && (
           <div
             ref={macdContainerRef}
-            style={{ height: '110px', minHeight: '110px', width: '100%', borderTop: '1px solid var(--qs-border)' }}
+            style={{ flex: 1, minHeight: '80px', width: '100%', borderTop: '1px solid var(--qs-border)' }}
           />
         )}
 
@@ -1103,7 +1368,7 @@ export const PriceChart: React.FC = () => {
         {showAdx && (
           <div
             ref={adxContainerRef}
-            style={{ height: '110px', minHeight: '110px', width: '100%', borderTop: '1px solid var(--qs-border)' }}
+            style={{ flex: 1, minHeight: '80px', width: '100%', borderTop: '1px solid var(--qs-border)' }}
           />
         )}
       </div>
