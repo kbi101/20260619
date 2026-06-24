@@ -35,15 +35,27 @@ public class WebSocketSubscriptionListener {
         String destination = headers.getDestination();
         String subId = headers.getSubscriptionId();
         
-        if (destination != null && destination.startsWith("/topic/ticks/")) {
-            String symbol = destination.substring("/topic/ticks/".length());
-            if (subId != null) {
-                subscriptionIdToSymbol.put(subId, symbol);
-            }
-            int count = symbolRefCounts.merge(symbol, 1, Integer::sum);
-            log.info("WebSocket: Client subscribed to {} (subId={}, refCount={})", symbol, subId, count);
-            if (count == 1) {
-                marketDataProvider.subscribe(symbol);
+        if (destination != null) {
+            if (destination.startsWith("/topic/ticks/chart/")) {
+                String symbol = destination.substring("/topic/ticks/chart/".length());
+                if (subId != null) {
+                    subscriptionIdToSymbol.put(subId, "chart:" + symbol);
+                }
+                int count = symbolRefCounts.merge("chart:" + symbol, 1, Integer::sum);
+                log.info("WebSocket: Client subscribed to chart {} (subId={}, refCount={})", symbol, subId, count);
+                if (count == 1) {
+                    marketDataProvider.subscribeChart(symbol);
+                }
+            } else if (destination.startsWith("/topic/ticks/")) {
+                String symbol = destination.substring("/topic/ticks/".length());
+                if (subId != null) {
+                    subscriptionIdToSymbol.put(subId, symbol);
+                }
+                int count = symbolRefCounts.merge(symbol, 1, Integer::sum);
+                log.info("WebSocket: Client subscribed to {} (subId={}, refCount={})", symbol, subId, count);
+                if (count == 1) {
+                    marketDataProvider.subscribe(symbol);
+                }
             }
         }
     }
@@ -54,13 +66,21 @@ public class WebSocketSubscriptionListener {
         String subId = headers.getSubscriptionId();
         
         if (subId != null) {
-            String symbol = subscriptionIdToSymbol.remove(subId);
-            if (symbol != null) {
-                Integer current = symbolRefCounts.compute(symbol, (k, v) -> (v == null || v <= 1) ? null : v - 1);
+            String mapped = subscriptionIdToSymbol.remove(subId);
+            if (mapped != null) {
+                Integer current = symbolRefCounts.compute(mapped, (k, v) -> (v == null || v <= 1) ? null : v - 1);
                 int count = current != null ? current : 0;
-                log.info("WebSocket: Client unsubscribed from {} (subId={}, refCount={})", symbol, subId, count);
-                if (count == 0) {
-                    marketDataProvider.unsubscribe(symbol);
+                if (mapped.startsWith("chart:")) {
+                    String symbol = mapped.substring("chart:".length());
+                    log.info("WebSocket: Client unsubscribed from chart {} (subId={}, refCount={})", symbol, subId, count);
+                    if (count == 0) {
+                        marketDataProvider.unsubscribeChart(symbol);
+                    }
+                } else {
+                    log.info("WebSocket: Client unsubscribed from {} (subId={}, refCount={})", mapped, subId, count);
+                    if (count == 0) {
+                        marketDataProvider.unsubscribe(mapped);
+                    }
                 }
             }
         }

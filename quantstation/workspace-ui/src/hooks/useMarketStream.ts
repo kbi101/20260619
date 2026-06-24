@@ -134,45 +134,60 @@ export function useMarketStream(): void {
     const client = clientRef.current
     if (!client || !connected || !client.connected) return
 
-    const symbolsToSubscribe = watchlist.map((item) => item.symbol)
-    if (!symbolsToSubscribe.includes(activeSymbol)) {
-      symbolsToSubscribe.push(activeSymbol)
+    // Build the set of desired destinations:
+    // High-precision chart for activeSymbol, standard for others in watchlist
+    const desiredDestinations = new Set<string>()
+    if (activeSymbol) {
+      desiredDestinations.add(`/topic/ticks/chart/${activeSymbol}`)
     }
-
-    console.log(`[QuantStation] Effect 2 running. activeSymbol="${activeSymbol}", symbolsToSubscribe=${JSON.stringify(symbolsToSubscribe)}, activeSubscriptions=${JSON.stringify(Object.keys(subscriptionsRef.current))}`)
-
-    // Unsubscribe from symbols no longer needed
-    Object.keys(subscriptionsRef.current).forEach((symbol) => {
-      if (!symbolsToSubscribe.includes(symbol)) {
-        console.log(`[QuantStation] Dynamically unsubscribing from /topic/ticks/${symbol}`)
-        try {
-          subscriptionsRef.current[symbol].unsubscribe()
-        } catch (e) {
-          console.warn(`[QuantStation] Failed to unsubscribe from /topic/ticks/${symbol}`, e)
-        }
-        delete subscriptionsRef.current[symbol]
+    watchlist.forEach((item) => {
+      if (item.symbol !== activeSymbol) {
+        desiredDestinations.add(`/topic/ticks/${item.symbol}`)
       }
     })
 
-    // Subscribe to new symbols
-    let hasNewSub = false
-    symbolsToSubscribe.forEach((symbol) => {
-      if (!subscriptionsRef.current[symbol]) {
-        hasNewSub = true
-        console.log(`[QuantStation] Dynamically subscribing to /topic/ticks/${symbol}`)
+    console.log(`[QuantStation] Effect 2 running. activeSymbol="${activeSymbol}", desiredDestinations=${JSON.stringify(Array.from(desiredDestinations))}, activeSubscriptions=${JSON.stringify(Object.keys(subscriptionsRef.current))}`)
+
+    // Unsubscribe from destinations no longer needed
+    Object.keys(subscriptionsRef.current).forEach((dest) => {
+      if (!desiredDestinations.has(dest)) {
+        console.log(`[QuantStation] Dynamically unsubscribing from ${dest}`)
         try {
-          const sub = client.subscribe(`/topic/ticks/${symbol}`, (message) => {
-            console.log(`[QuantStation] Received tick for ${symbol}:`, message.body)
+          subscriptionsRef.current[dest].unsubscribe()
+        } catch (e) {
+          console.warn(`[QuantStation] Failed to unsubscribe from ${dest}`, e)
+        }
+        delete subscriptionsRef.current[dest]
+      }
+    })
+
+    // Subscribe to new destinations
+    let hasNewSub = false
+    desiredDestinations.forEach((dest) => {
+      if (!subscriptionsRef.current[dest]) {
+        hasNewSub = true
+        console.log(`[QuantStation] Dynamically subscribing to ${dest}`)
+        
+        let symbol = ''
+        if (dest.startsWith('/topic/ticks/chart/')) {
+          symbol = dest.substring('/topic/ticks/chart/'.length)
+        } else if (dest.startsWith('/topic/ticks/')) {
+          symbol = dest.substring('/topic/ticks/'.length)
+        }
+
+        try {
+          const sub = client.subscribe(dest, (message) => {
+            console.log(`[QuantStation] Received tick for ${symbol} on ${dest}:`, message.body)
             try {
               const tick: Tick = JSON.parse(message.body)
               updateTick(tick)
             } catch (err) {
-              console.error(`[QuantStation] Failed to parse tick message for ${symbol}:`, err)
+              console.error(`[QuantStation] Failed to parse tick message for ${symbol} on ${dest}:`, err)
             }
           })
-          subscriptionsRef.current[symbol] = sub
+          subscriptionsRef.current[dest] = sub
         } catch (e) {
-          console.error(`[QuantStation] Failed to subscribe to /topic/ticks/${symbol}`, e)
+          console.error(`[QuantStation] Failed to subscribe to ${dest}`, e)
         }
       }
     })

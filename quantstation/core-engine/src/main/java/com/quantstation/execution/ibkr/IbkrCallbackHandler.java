@@ -184,6 +184,44 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
         }
     }
 
+    @Override
+    public void tickByTickAllLast(int reqId, int tickType, long time, double price, Decimal size,
+                                 TickAttribLast tickAttribLast, String exchange, String specialConditions) {
+        String symbol = marketDataAdapter.getSymbolForReqId(reqId);
+        if (symbol == null) return;
+
+        Tick last = lastTicks.get(symbol);
+
+        // Use the existing bid/ask/prevClose from last standard tick if available
+        double bid = (last == null) ? 0.0 : last.bidPrice();
+        double ask = (last == null) ? 0.0 : last.askPrice();
+        int bidSize = (last == null) ? 0 : last.bidSize();
+        int askSize = (last == null) ? 0 : last.askSize();
+        double prevClose = (last == null) ? 0.0 : last.prevClose();
+
+        int sizeVal = size != null ? size.value().intValue() : 0;
+        Instant timestamp = Instant.ofEpochSecond(time);
+
+        Tick updated = new Tick(
+                symbol,
+                price,
+                sizeVal,
+                exchange,
+                specialConditions,
+                bid,
+                ask,
+                bidSize,
+                askSize,
+                prevClose,
+                timestamp
+        );
+
+        lastTicks.put(symbol, updated);
+        if (tickRouter != null) {
+            tickRouter.onTick(updated);
+        }
+    }
+
     // ── Historical Data Callbacks ────────────────────
 
     @Override
@@ -275,6 +313,10 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
             log.warn("IB warning: [{}] {} (orderId={})", errorCode, errorMsg, id);
         } else {
             log.error("IB error: [{}] {} (orderId={})", errorCode, errorMsg, id);
+        }
+
+        if (errorCode == 10189) {
+            marketDataAdapter.handleChartSubscriptionFallback(id);
         }
     }
 

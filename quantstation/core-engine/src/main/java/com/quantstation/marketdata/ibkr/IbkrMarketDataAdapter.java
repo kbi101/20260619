@@ -39,6 +39,11 @@ public class IbkrMarketDataAdapter implements MarketDataProvider {
     private final Map<String, Integer> symbolToReqId = new ConcurrentHashMap<>();
     private final AtomicInteger nextReqId = new AtomicInteger(1000);
 
+    private final Set<String> desiredChartSymbols = ConcurrentHashMap.newKeySet();
+    private final Set<String> subscribedChartSymbols = ConcurrentHashMap.newKeySet();
+    private final Map<String, Integer> symbolToChartReqId = new ConcurrentHashMap<>();
+    private final List<String> chartEvictionQueue = new java.util.concurrent.CopyOnWriteArrayList<>();
+
     public IbkrMarketDataAdapter(IbkrConnectionManager connectionManager,
                                  IbkrCallbackHandler callbackHandler) {
         this.connectionManager = connectionManager;
@@ -54,15 +59,22 @@ public class IbkrMarketDataAdapter implements MarketDataProvider {
                     Thread.sleep(1000);
                     boolean isConnected = connectionManager.isConnected();
                     if (isConnected && !wasConnected) {
-                        log.info("IBKR MarketData: Connection established/recovered, re-subscribing to {} active symbols", desiredSymbols.size());
+                        log.info("IBKR MarketData: Connection established/recovered, re-subscribing to {} active symbols and {} chart symbols", 
+                                desiredSymbols.size(), desiredChartSymbols.size());
                         for (String symbol : desiredSymbols) {
                             doSubscribe(symbol);
+                        }
+                        for (String symbol : desiredChartSymbols) {
+                            doSubscribeChart(symbol);
                         }
                     } else if (!isConnected && wasConnected) {
                         log.warn("IBKR MarketData: Connection lost, resetting active subscriptions");
                         subscribedSymbols.clear();
                         reqIdToSymbol.clear();
                         symbolToReqId.clear();
+
+                        subscribedChartSymbols.clear();
+                        symbolToChartReqId.clear();
                     }
                     wasConnected = isConnected;
                 } catch (InterruptedException e) {
@@ -134,6 +146,108 @@ public class IbkrMarketDataAdapter implements MarketDataProvider {
                 }
             }
         }
+    }
+
+    @Override
+    public void subscribeChart(String symbol) {
+        log.info("IBKR MarketData: Client requested chart subscription for {}", symbol);
+        synchronized (chartEvictionQueue) {
+            if (desiredChartSymbols.contains(symbol)) {
+                // Already in desired, move it to the end of the eviction queue so it's considered "most recent"
+                chartEvictionQueue.remove(symbol);
+                chartEvictionQueue.add(symbol);
+                return;
+            }
+
+            while (desiredChartSymbols.size() >= 3) {
+                String oldest = chartEvictionQueue.isEmpty() ? null : chartEvictionQueue.remove(0);
+                if (oldest != null) {
+                    log.info("IBKR MarketData: Evicting oldest chart subscription {} to respect limit of 3", oldest);
+                    desiredChartSymbols.remove(oldest);
+                    doUnsubscribeChart(oldest);
+                } else {
+                    break;
+                }
+            }
+
+            desiredChartSymbols.add(symbol);
+            chartEvictionQueue.add(symbol);
+        }
+
+        if (connectionManager.isConnected()) {
+            doSubscribeChart(symbol);
+        } else {
+            log.warn("IBKR MarketData: Cannot subscribe chart to {} immediately — not connected to IB Gateway (queued)", symbol);
+        }
+    }
+
+    private void doSubscribeChart(String symbol) {
+        if (subscribedChartSymbols.add(symbol)) {
+            log.info("IBKR MarketData: Sending reqTickByTickData for {}", symbol);
+            int reqId = nextReqId.getAndIncrement();
+            reqIdToSymbol.put(reqId, symbol);
+            symbolToChartReqId.put(symbol, reqId);
+
+            Contract contract = new Contract();
+            contract.symbol(symbol);
+            contract.secType("STK");
+            contract.exchange("SMART");
+            contract.currency("USD");
+
+            try {
+                connectionManager.getClient().reqTickByTickData(reqId, contract, "Last", 0, false);
+            } catch (Exception e) {
+                log.error("IBKR MarketData: Failed to send reqTickByTickData for {}", symbol, e);
+                subscribedChartSymbols.remove(symbol);
+                reqIdToSymbol.remove(reqId);
+                symbolToChartReqId.remove(symbol);
+            }
+        }
+    }
+
+    @Override
+    public void unsubscribeChart(String symbol) {
+        log.info("IBKR MarketData: Client requested chart unsubscribe for {}", symbol);
+        synchronized (chartEvictionQueue) {
+            desiredChartSymbols.remove(symbol);
+            chartEvictionQueue.remove(symbol);
+        }
+        doUnsubscribeChart(symbol);
+        if (!desiredSymbols.contains(symbol)) {
+            doUnsubscribe(symbol);
+        }
+    }
+
+    private void doUnsubscribeChart(String symbol) {
+        if (subscribedChartSymbols.remove(symbol)) {
+            log.info("IBKR MarketData: Canceling reqTickByTickData for {}", symbol);
+            Integer reqId = symbolToChartReqId.remove(symbol);
+            if (reqId != null) {
+                reqIdToSymbol.remove(reqId);
+                if (connectionManager.isConnected()) {
+                    try {
+                        connectionManager.getClient().cancelTickByTickData(reqId);
+                    } catch (Exception e) {
+                        log.error("IBKR MarketData: Failed to cancel tick-by-tick data for {}", symbol, e);
+                    }
+                }
+            }
+        }
+    }
+
+    public void handleChartSubscriptionFallback(int reqId) {
+        String symbol = reqIdToSymbol.get(reqId);
+        if (symbol == null) return;
+
+        log.warn("IBKR MarketData: High-precision feed failed for {} (reqId={}). Falling back to standard market data.", symbol, reqId);
+
+        // Remove the failed chart request mappings
+        symbolToChartReqId.remove(symbol);
+        reqIdToSymbol.remove(reqId);
+        subscribedChartSymbols.remove(symbol);
+
+        // Fall back to standard subscription for this symbol
+        doSubscribe(symbol);
     }
 
     @Override

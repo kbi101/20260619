@@ -27,6 +27,16 @@ public interface MarketDataProvider {
     void unsubscribe(String symbol);
 
     /**
+     * Subscribe to high-precision real-time charting market data for a symbol.
+     */
+    default void subscribeChart(String symbol) {}
+
+    /**
+     * Unsubscribe from high-precision real-time charting market data for a symbol.
+     */
+    default void unsubscribeChart(String symbol) {}
+
+    /**
      * Set the callback for incoming ticks.
      */
     void setTickListener(TickListener listener);

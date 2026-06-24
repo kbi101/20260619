@@ -39,6 +39,8 @@ public class UiWebSocketController {
     public void pushTick(Tick tick) {
         messagingTemplate.convertAndSend(
                 "/topic/ticks/" + tick.symbol(), tick);
+        messagingTemplate.convertAndSend(
+                "/topic/ticks/chart/" + tick.symbol(), tick);
     }
 
     /**
