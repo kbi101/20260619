@@ -64,7 +64,9 @@ function calculateVWAP(bars: { time: number; high: number; low: number; close: n
   for (let i = 0; i < bars.length; i++) {
     const bar = bars[i]
     const typicalPrice = (bar.high + bar.low + bar.close) / 3
-    const date = new Date(bar.time * 1000)
+    const offsetMinutes = new Date().getTimezoneOffset()
+    const offsetSeconds = offsetMinutes * 60
+    const date = new Date((bar.time + offsetSeconds) * 1000)
     const dayStr = date.toDateString()
 
     // Daily reset
@@ -456,8 +458,11 @@ export const PriceChart: React.FC = () => {
       })
       .then((data: any[]) => {
         if (Array.isArray(data) && data.length > 0) {
+          const offsetMinutes = new Date().getTimezoneOffset()
+          const offsetSeconds = offsetMinutes * 60
+
           const mappedBars = data.map((b: any) => ({
-            time: Math.floor(new Date(b.barStart).getTime() / 1000),
+            time: Math.floor(new Date(b.barStart).getTime() / 1000) - offsetSeconds,
             open: b.open,
             high: b.high,
             low: b.low,
@@ -470,7 +475,7 @@ export const PriceChart: React.FC = () => {
           candleSeries.setData(mappedBars as any)
 
           const volumes = data.map((b: any) => ({
-            time: Math.floor(new Date(b.barStart).getTime() / 1000),
+            time: Math.floor(new Date(b.barStart).getTime() / 1000) - offsetSeconds,
             value: b.volume || 0,
             color: b.close >= b.open ? 'rgba(38, 208, 124, 0.3)' : 'rgba(242, 54, 69, 0.3)',
           }))
@@ -478,7 +483,7 @@ export const PriceChart: React.FC = () => {
 
           const lastBar = data[data.length - 1]
           currentBarRef.current = {
-            time: Math.floor(new Date(lastBar.barStart).getTime() / 1000),
+            time: Math.floor(new Date(lastBar.barStart).getTime() / 1000) - offsetSeconds,
             open: lastBar.open,
             high: lastBar.high,
             low: lastBar.low,
@@ -563,7 +568,9 @@ export const PriceChart: React.FC = () => {
     if (!tick || !candleSeriesRef.current || !volumeSeriesRef.current) return
     if (loadedSymbolRef.current !== activeSymbol) return
 
-    const time = Math.floor(new Date(tick.timestamp).getTime() / 1000)
+    const offsetMinutes = new Date().getTimezoneOffset()
+    const offsetSeconds = offsetMinutes * 60
+    const time = Math.floor(new Date(tick.timestamp).getTime() / 1000) - offsetSeconds
     const roundedTime = Math.floor(time / 60) * 60
 
     const lastBar = currentBarRef.current
