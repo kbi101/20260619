@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createChart, type IChartApi, type ISeriesApi, ColorType } from 'lightweight-charts'
 import { useStore } from '../../store/useStore'
+import * as ChartDataManager from '../../services/ChartDataManager'
 
 // ═══════════════════════════════════════════════════════
 // Technical Indicator Math Helpers
@@ -361,18 +362,12 @@ export const PriceChart: React.FC = () => {
   const rsiDataSetRef = useRef(false)
   const macdDataSetRef = useRef(false)
   const adxDataSetRef = useRef(false)
-  const loadedSymbolRef = useRef<string | null>(null)
   const barsRef = useRef<any[]>([])
   const rsiDataRef = useRef<any[]>([])
   const macdDataRef = useRef<any[]>([])
   const adxDataRef = useRef<any[]>([])
-
+  const [loadedSymbol, setLoadedSymbol] = useState<string | null>(null)
   const { activeSymbol } = useStore()
-  const tick = useStore((state) => state.ticks[activeSymbol])
-
-  // Bars State (Historical + Streaming)
-  const [bars, setBars] = useState<any[]>([])
-  const currentBarRef = useRef<any | null>(null)
 
   // Toggles State
   const [showVwap, setShowVwap] = useState(() => localStorage.getItem('qs_chart_show_vwap') === 'true')
@@ -401,8 +396,7 @@ export const PriceChart: React.FC = () => {
   useEffect(() => {
     if (!chartContainerRef.current) return
 
-    loadedSymbolRef.current = null
-    setBars([])
+    setLoadedSymbol(null)
 
     const chart = createChart(chartContainerRef.current, {
       layout: {
@@ -451,55 +445,56 @@ export const PriceChart: React.FC = () => {
       scaleMargins: { top: 0.8, bottom: 0 },
     })
 
-    fetch(`http://localhost:8080/api/history/bars?symbol=${activeSymbol}&duration=1 D&barSize=1 min`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch historical bars')
-        return res.json()
-      })
-      .then((data: any[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const offsetMinutes = new Date().getTimezoneOffset()
-          const offsetSeconds = offsetMinutes * 60
-
-          const mappedBars = data.map((b: any) => ({
-            time: Math.floor(new Date(b.barStart).getTime() / 1000) - offsetSeconds,
-            open: b.open,
-            high: b.high,
-            low: b.low,
-            close: b.close,
-            volume: b.volume || 0,
-          }))
-
-          setBars(mappedBars)
-          barsRef.current = mappedBars
-          candleSeries.setData(mappedBars as any)
-
-          const volumes = data.map((b: any) => ({
-            time: Math.floor(new Date(b.barStart).getTime() / 1000) - offsetSeconds,
-            value: b.volume || 0,
-            color: b.close >= b.open ? 'rgba(38, 208, 124, 0.3)' : 'rgba(242, 54, 69, 0.3)',
-          }))
-          volumeSeries.setData(volumes as any)
-
-          const lastBar = data[data.length - 1]
-          currentBarRef.current = {
-            time: Math.floor(new Date(lastBar.barStart).getTime() / 1000) - offsetSeconds,
-            open: lastBar.open,
-            high: lastBar.high,
-            low: lastBar.low,
-            close: lastBar.close,
-            volume: lastBar.volume || 0,
-          }
-          loadedSymbolRef.current = activeSymbol
-        }
-      })
-      .catch((err) => {
-        console.warn('[PriceChart] Could not fetch historical bars, chart will start empty.', err)
-      })
-
     chartRef.current = chart
     candleSeriesRef.current = candleSeries
     volumeSeriesRef.current = volumeSeries
+
+    const setLoadedData = (barsToSet: ChartDataManager.ChartBar[]) => {
+      barsRef.current = barsToSet
+      candleSeries.setData(barsToSet as any)
+      const volumes = barsToSet.map((b) => ({
+        time: b.time,
+        value: b.volume,
+        color: b.close >= b.open ? 'rgba(38, 208, 124, 0.3)' : 'rgba(242, 54, 69, 0.3)',
+      }))
+      volumeSeries.setData(volumes as any)
+      setLoadedSymbol(activeSymbol)
+    }
+
+    const cachedStatus = ChartDataManager.getChartStatus(activeSymbol)
+    if (cachedStatus === 'success') {
+      console.log(`[PriceChart] Instant render from cache for ${activeSymbol}`)
+      setLoadedData(ChartDataManager.getChartBars(activeSymbol))
+    } else {
+      ChartDataManager.setChartStatus(activeSymbol, 'loading')
+      fetch(`http://localhost:8080/api/history/bars?symbol=${activeSymbol}&duration=1 D&barSize=1 min`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to fetch historical bars')
+          return res.json()
+        })
+        .then((data: any[]) => {
+          if (Array.isArray(data) && data.length > 0) {
+            const offsetMinutes = new Date().getTimezoneOffset()
+            const offsetSeconds = offsetMinutes * 60
+
+            const mappedBars = data.map((b: any) => ({
+              time: Math.floor(new Date(b.barStart).getTime() / 1000) - offsetSeconds,
+              open: b.open,
+              high: b.high,
+              low: b.low,
+              close: b.close,
+              volume: b.volume || 0,
+            }))
+
+            ChartDataManager.initChartBars(activeSymbol, mappedBars)
+            setLoadedData(ChartDataManager.getChartBars(activeSymbol))
+          }
+        })
+        .catch((err) => {
+          console.warn('[PriceChart] Could not fetch historical bars, chart will start empty.', err)
+          ChartDataManager.setChartStatus(activeSymbol, 'error')
+        })
+    }
 
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -517,7 +512,7 @@ export const PriceChart: React.FC = () => {
       resizeObserver.disconnect()
       chart.remove()
       chartRef.current = null
-      currentBarRef.current = null
+      setLoadedSymbol(null)
 
       if (rsiChartRef.current) {
         rsiChartRef.current.remove()
@@ -563,89 +558,144 @@ export const PriceChart: React.FC = () => {
     }
   }, [activeSymbol])
 
-  // ── 2. Stream Live Tick Data into Current Minute Bar ──
+  // ── 2. Stream Live Tick Data ──
   useEffect(() => {
-    if (!tick || !candleSeriesRef.current || !volumeSeriesRef.current) return
-    if (loadedSymbolRef.current !== activeSymbol) return
+    if (!candleSeriesRef.current || !volumeSeriesRef.current) return
 
-    const offsetMinutes = new Date().getTimezoneOffset()
-    const offsetSeconds = offsetMinutes * 60
-    const time = Math.floor(new Date(tick.timestamp).getTime() / 1000) - offsetSeconds
-    const roundedTime = Math.floor(time / 60) * 60
+    const unsubscribe = ChartDataManager.registerChartTickListener(activeSymbol, (tick, updatedBar, isNewBar) => {
+      if (!candleSeriesRef.current || !volumeSeriesRef.current) return
 
-    const lastBar = currentBarRef.current
-    const lastStateBar = barsRef.current && barsRef.current.length > 0 ? barsRef.current[barsRef.current.length - 1] : null
-    const maxBarTime = Math.max(
-      lastBar ? lastBar.time : 0,
-      lastStateBar ? lastStateBar.time : 0
-    )
-
-    if (maxBarTime > 0 && roundedTime < maxBarTime) {
-      // Ignore ticks that are older than the last bar to prevent lightweight-charts crash
-      return
-    }
-
-    if (lastBar && lastBar.time === roundedTime) {
-      lastBar.high = Math.max(lastBar.high, tick.price)
-      lastBar.low = Math.min(lastBar.low, tick.price)
-      lastBar.close = tick.price
-      lastBar.volume += tick.size
-    } else {
-      currentBarRef.current = {
-        time: roundedTime,
-        open: tick.price,
-        high: tick.price,
-        low: tick.price,
-        close: tick.price,
-        volume: tick.size,
-      }
-    }
-
-    const current = currentBarRef.current
-    if (current) {
-      candleSeriesRef.current.update({
-        time: current.time,
-        open: current.open,
-        high: current.high,
-        low: current.low,
-        close: current.close,
-      } as any)
-
+      candleSeriesRef.current.update(updatedBar as any)
       volumeSeriesRef.current.update({
-        time: current.time,
-        value: current.volume,
-        color: current.close >= current.open ? 'rgba(38, 208, 124, 0.3)' : 'rgba(242, 54, 69, 0.3)',
+        time: updatedBar.time,
+        value: updatedBar.volume,
+        color: updatedBar.close >= updatedBar.open ? 'rgba(38, 208, 124, 0.3)' : 'rgba(242, 54, 69, 0.3)',
       } as any)
-    }
 
-    setBars((prevBars) => {
-      if (prevBars.length === 0) return prevBars
-      const updated = [...prevBars]
-      const last = updated[updated.length - 1]
-      if (last.time === roundedTime) {
-        last.high = Math.max(last.high, tick.price)
-        last.low = Math.min(last.low, tick.price)
-        last.close = tick.price
-        last.volume += tick.size
-      } else {
-        updated.push({
-          time: roundedTime,
-          open: tick.price,
-          high: tick.price,
-          low: tick.price,
-          close: tick.price,
-          volume: tick.size,
-        })
+      const currentBars = ChartDataManager.getChartBars(activeSymbol)
+      barsRef.current = currentBars
+      const lastTime = updatedBar.time
+      const lastIdx = currentBars.length - 1
+
+      // VWAP
+      if (showVwap && vwapSeriesRef.current) {
+        const vwapVals = calculateVWAP(currentBars)
+        const val = vwapVals[lastIdx]
+        if (!isNaN(val)) vwapSeriesRef.current.update({ time: lastTime as any, value: val })
       }
-      barsRef.current = updated
-      return updated
+
+      // Bollinger Bands
+      if (showBb && bbUpperSeriesRef.current && bbMiddleSeriesRef.current && bbLowerSeriesRef.current) {
+        const closePrices = currentBars.map((b) => b.close)
+        const { middle, upper, lower } = calculateBollingerBands(closePrices)
+        const uVal = upper[lastIdx]
+        const mVal = middle[lastIdx]
+        const lVal = lower[lastIdx]
+        if (!isNaN(uVal)) bbUpperSeriesRef.current.update({ time: lastTime as any, value: uVal })
+        if (!isNaN(mVal)) bbMiddleSeriesRef.current.update({ time: lastTime as any, value: mVal })
+        if (!isNaN(lVal)) bbLowerSeriesRef.current.update({ time: lastTime as any, value: lVal })
+      }
+
+      // EMA 9
+      if (showMa9 && ma9SeriesRef.current) {
+        const closePrices = currentBars.map((b) => b.close)
+        const ema9 = calculateEMA(closePrices, 9)
+        const val = ema9[lastIdx]
+        if (!isNaN(val)) ma9SeriesRef.current.update({ time: lastTime as any, value: val })
+      }
+
+      // EMA 21
+      if (showMa21 && ma21SeriesRef.current) {
+        const closePrices = currentBars.map((b) => b.close)
+        const ema21 = calculateEMA(closePrices, 21)
+        const val = ema21[lastIdx]
+        if (!isNaN(val)) ma21SeriesRef.current.update({ time: lastTime as any, value: val })
+      }
+
+      // EMA 50
+      if (showMa50 && ma50SeriesRef.current) {
+        const closePrices = currentBars.map((b) => b.close)
+        const ema50 = calculateEMA(closePrices, 50)
+        const val = ema50[lastIdx]
+        if (!isNaN(val)) ma50SeriesRef.current.update({ time: lastTime as any, value: val })
+      }
+
+      // RSI
+      if (showRsi && rsiSeriesRef.current) {
+        const closePrices = currentBars.map((b) => b.close)
+        const rsiVals = calculateRSI(closePrices, 14)
+        const val = rsiVals[lastIdx]
+        if (!isNaN(val)) {
+          rsiSeriesRef.current.update({ time: lastTime as any, value: val })
+          if (rsiDataRef.current.length > 0) {
+            const last = rsiDataRef.current[rsiDataRef.current.length - 1]
+            if (last.time === lastTime) {
+              last.value = val
+            } else {
+              rsiDataRef.current.push({ time: lastTime, value: val })
+            }
+          }
+        }
+      }
+
+      // MACD
+      if (showMacd && macdLineSeriesRef.current && macdSignalSeriesRef.current && macdHistSeriesRef.current) {
+        const closePrices = currentBars.map((b) => b.close)
+        const { macdLine, signalLine, histogram } = calculateMACD(closePrices)
+        const mlVal = macdLine[lastIdx]
+        const msVal = signalLine[lastIdx]
+        const hVal = histogram[lastIdx]
+        if (!isNaN(mlVal)) {
+          macdLineSeriesRef.current.update({ time: lastTime as any, value: mlVal })
+          if (macdDataRef.current.length > 0) {
+            const last = macdDataRef.current[macdDataRef.current.length - 1]
+            if (last.time === lastTime) {
+              last.value = mlVal
+            } else {
+              macdDataRef.current.push({ time: lastTime, value: mlVal })
+            }
+          }
+        }
+        if (!isNaN(msVal)) macdSignalSeriesRef.current.update({ time: lastTime as any, value: msVal })
+        if (!isNaN(hVal)) {
+          macdHistSeriesRef.current.update({
+            time: lastTime as any,
+            value: hVal,
+            color: hVal >= 0 ? 'rgba(38, 208, 124, 0.5)' : 'rgba(242, 54, 69, 0.5)',
+          })
+        }
+      }
+
+      // ADX
+      if (showAdx && adxSeriesRef.current && adxPlusDiSeriesRef.current && adxMinusDiSeriesRef.current) {
+        const { adx: adxVals, plusDI, minusDI } = calculateADX(currentBars)
+        const adxVal = adxVals[lastIdx]
+        const plusDiVal = plusDI[lastIdx]
+        const minusDiVal = minusDI[lastIdx]
+        if (!isNaN(adxVal)) {
+          adxSeriesRef.current.update({ time: lastTime as any, value: adxVal })
+          if (adxDataRef.current.length > 0) {
+            const last = adxDataRef.current[adxDataRef.current.length - 1]
+            if (last.time === lastTime) {
+              last.value = adxVal
+            } else {
+              adxDataRef.current.push({ time: lastTime, value: adxVal })
+            }
+          }
+        }
+        if (!isNaN(plusDiVal)) adxPlusDiSeriesRef.current.update({ time: lastTime as any, value: plusDiVal })
+        if (!isNaN(minusDiVal)) adxMinusDiSeriesRef.current.update({ time: lastTime as any, value: minusDiVal })
+      }
     })
-  }, [tick])
+
+    return () => unsubscribe()
+  }, [activeSymbol, showVwap, showBb, showMa9, showMa21, showMa50, showRsi, showMacd, showAdx])
 
   // ── 3. Overlay Series (VWAP, Bollinger Bands, MAs) ──
   useEffect(() => {
     const chart = chartRef.current
-    if (!chart || bars.length === 0 || loadedSymbolRef.current !== activeSymbol) return
+    const currentBars = ChartDataManager.getChartBars(activeSymbol)
+    if (!chart || currentBars.length === 0 || loadedSymbol !== activeSymbol) return
 
     // VWAP
     if (showVwap) {
@@ -656,16 +706,16 @@ export const PriceChart: React.FC = () => {
           title: 'VWAP',
         })
       }
-      const vwapVals = calculateVWAP(bars)
-      const lastIdx = bars.length - 1
-      const lastTime = bars[lastIdx].time
+      const vwapVals = calculateVWAP(currentBars)
+      const lastIdx = currentBars.length - 1
+      const lastTime = currentBars[lastIdx].time
       const lastVal = vwapVals[lastIdx]
 
       if (!vwapDataSetRef.current) {
-        vwapSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: vwapVals[i] })).filter((d) => !isNaN(d.value)))
+        vwapSeriesRef.current.setData(currentBars.map((b, i) => ({ time: b.time, value: vwapVals[i] })).filter((d) => !isNaN(d.value)) as any)
         vwapDataSetRef.current = true
       } else if (!isNaN(lastVal)) {
-        vwapSeriesRef.current.update({ time: lastTime, value: lastVal })
+        vwapSeriesRef.current.update({ time: lastTime as any, value: lastVal })
       }
     } else {
       if (vwapSeriesRef.current) {
@@ -682,24 +732,24 @@ export const PriceChart: React.FC = () => {
         bbMiddleSeriesRef.current = chart.addLineSeries({ color: 'rgba(144, 98, 235, 0.4)', lineWidth: 1, lineStyle: 2, title: 'BB Middle' })
         bbLowerSeriesRef.current = chart.addLineSeries({ color: 'rgba(144, 98, 235, 0.7)', lineWidth: 1, title: 'BB Lower' })
       }
-      const closePrices = bars.map((b) => b.close)
+      const closePrices = currentBars.map((b) => b.close)
       const { middle, upper, lower } = calculateBollingerBands(closePrices)
-      const lastIdx = bars.length - 1
-      const lastTime = bars[lastIdx].time
+      const lastIdx = currentBars.length - 1
+      const lastTime = currentBars[lastIdx].time
 
       if (bbUpperSeriesRef.current && bbMiddleSeriesRef.current && bbLowerSeriesRef.current) {
         if (!bbDataSetRef.current) {
-          bbUpperSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: upper[i] })).filter((d) => !isNaN(d.value)))
-          bbMiddleSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: middle[i] })).filter((d) => !isNaN(d.value)))
-          bbLowerSeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: lower[i] })).filter((d) => !isNaN(d.value)))
+          bbUpperSeriesRef.current.setData(currentBars.map((b, i) => ({ time: b.time, value: upper[i] })).filter((d) => !isNaN(d.value)) as any)
+          bbMiddleSeriesRef.current.setData(currentBars.map((b, i) => ({ time: b.time, value: middle[i] })).filter((d) => !isNaN(d.value)) as any)
+          bbLowerSeriesRef.current.setData(currentBars.map((b, i) => ({ time: b.time, value: lower[i] })).filter((d) => !isNaN(d.value)) as any)
           bbDataSetRef.current = true
         } else {
           const uVal = upper[lastIdx]
           const mVal = middle[lastIdx]
           const lVal = lower[lastIdx]
-          if (!isNaN(uVal)) bbUpperSeriesRef.current.update({ time: lastTime, value: uVal })
-          if (!isNaN(mVal)) bbMiddleSeriesRef.current.update({ time: lastTime, value: mVal })
-          if (!isNaN(lVal)) bbLowerSeriesRef.current.update({ time: lastTime, value: lVal })
+          if (!isNaN(uVal)) bbUpperSeriesRef.current.update({ time: lastTime as any, value: uVal })
+          if (!isNaN(mVal)) bbMiddleSeriesRef.current.update({ time: lastTime as any, value: mVal })
+          if (!isNaN(lVal)) bbLowerSeriesRef.current.update({ time: lastTime as any, value: lVal })
         }
       }
     } else {
@@ -719,17 +769,17 @@ export const PriceChart: React.FC = () => {
       if (!ma9SeriesRef.current) {
         ma9SeriesRef.current = chart.addLineSeries({ color: '#e5b83b', lineWidth: 1, title: 'EMA 9' })
       }
-      const closePrices = bars.map((b) => b.close)
+      const closePrices = currentBars.map((b) => b.close)
       const ema9 = calculateEMA(closePrices, 9)
-      const lastIdx = bars.length - 1
-      const lastTime = bars[lastIdx].time
+      const lastIdx = currentBars.length - 1
+      const lastTime = currentBars[lastIdx].time
       const lastVal = ema9[lastIdx]
 
       if (!ma9DataSetRef.current) {
-        ma9SeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: ema9[i] })).filter((d) => !isNaN(d.value)))
+        ma9SeriesRef.current.setData(currentBars.map((b, i) => ({ time: b.time, value: ema9[i] })).filter((d) => !isNaN(d.value)) as any)
         ma9DataSetRef.current = true
       } else if (!isNaN(lastVal)) {
-        ma9SeriesRef.current.update({ time: lastTime, value: lastVal })
+        ma9SeriesRef.current.update({ time: lastTime as any, value: lastVal })
       }
     } else {
       if (ma9SeriesRef.current) {
@@ -744,17 +794,17 @@ export const PriceChart: React.FC = () => {
       if (!ma21SeriesRef.current) {
         ma21SeriesRef.current = chart.addLineSeries({ color: '#ff7043', lineWidth: 1, title: 'EMA 21' })
       }
-      const closePrices = bars.map((b) => b.close)
+      const closePrices = currentBars.map((b) => b.close)
       const ema21 = calculateEMA(closePrices, 21)
-      const lastIdx = bars.length - 1
-      const lastTime = bars[lastIdx].time
+      const lastIdx = currentBars.length - 1
+      const lastTime = currentBars[lastIdx].time
       const lastVal = ema21[lastIdx]
 
       if (!ma21DataSetRef.current) {
-        ma21SeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: ema21[i] })).filter((d) => !isNaN(d.value)))
+        ma21SeriesRef.current.setData(currentBars.map((b, i) => ({ time: b.time, value: ema21[i] })).filter((d) => !isNaN(d.value)) as any)
         ma21DataSetRef.current = true
       } else if (!isNaN(lastVal)) {
-        ma21SeriesRef.current.update({ time: lastTime, value: lastVal })
+        ma21SeriesRef.current.update({ time: lastTime as any, value: lastVal })
       }
     } else {
       if (ma21SeriesRef.current) {
@@ -769,17 +819,17 @@ export const PriceChart: React.FC = () => {
       if (!ma50SeriesRef.current) {
         ma50SeriesRef.current = chart.addLineSeries({ color: '#ff3d00', lineWidth: 1, title: 'EMA 50' })
       }
-      const closePrices = bars.map((b) => b.close)
+      const closePrices = currentBars.map((b) => b.close)
       const ema50 = calculateEMA(closePrices, 50)
-      const lastIdx = bars.length - 1
-      const lastTime = bars[lastIdx].time
+      const lastIdx = currentBars.length - 1
+      const lastTime = currentBars[lastIdx].time
       const lastVal = ema50[lastIdx]
 
       if (!ma50DataSetRef.current) {
-        ma50SeriesRef.current.setData(bars.map((b, i) => ({ time: b.time, value: ema50[i] })).filter((d) => !isNaN(d.value)))
+        ma50SeriesRef.current.setData(currentBars.map((b, i) => ({ time: b.time, value: ema50[i] })).filter((d) => !isNaN(d.value)) as any)
         ma50DataSetRef.current = true
       } else if (!isNaN(lastVal)) {
-        ma50SeriesRef.current.update({ time: lastTime, value: lastVal })
+        ma50SeriesRef.current.update({ time: lastTime as any, value: lastVal })
       }
     } else {
       if (ma50SeriesRef.current) {
@@ -788,7 +838,7 @@ export const PriceChart: React.FC = () => {
       }
       ma50DataSetRef.current = false
     }
-  }, [bars, showVwap, showBb, showMa9, showMa21, showMa50, activeSymbol])
+  }, [loadedSymbol, showVwap, showBb, showMa9, showMa21, showMa50, activeSymbol])
 
   // ── 4a. Initialize RSI Chart ───────────────────────
   useEffect(() => {
@@ -859,6 +909,19 @@ export const PriceChart: React.FC = () => {
     rsiChartRef.current = newChart
     rsiSeriesRef.current = rsiSeries
 
+    const currentBars = ChartDataManager.getChartBars(activeSymbol)
+    if (loadedSymbol === activeSymbol && currentBars.length > 0) {
+      const closePrices = currentBars.map((b) => b.close)
+      const rsiVals = calculateRSI(closePrices, 14)
+      const rsiData = currentBars.map((b, i) => {
+        const val = rsiVals[i]
+        return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+      })
+      rsiDataRef.current = rsiData
+      rsiSeries.setData(rsiData as any)
+      rsiDataSetRef.current = true
+    }
+
     const mainRange = chartRef.current?.timeScale().getVisibleLogicalRange()
     if (mainRange) {
       newChart.timeScale().setVisibleLogicalRange(mainRange)
@@ -885,31 +948,7 @@ export const PriceChart: React.FC = () => {
       }
       rsiDataSetRef.current = false
     }
-  }, [showRsi, activeSymbol])
-
-  // ── 4b. Update RSI Data ────────────────────────────
-  useEffect(() => {
-    if (!showRsi || bars.length === 0 || !rsiSeriesRef.current || loadedSymbolRef.current !== activeSymbol) return
-
-    const closePrices = bars.map((b) => b.close)
-    const rsiVals = calculateRSI(closePrices, 14)
-    const lastIdx = bars.length - 1
-    const lastTime = bars[lastIdx].time
-    const lastVal = rsiVals[lastIdx]
-
-    const rsiData = bars.map((b, i) => {
-      const val = rsiVals[i]
-      return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
-    })
-    rsiDataRef.current = rsiData
-
-    if (!rsiDataSetRef.current) {
-      rsiSeriesRef.current.setData(rsiData)
-      rsiDataSetRef.current = true
-    } else if (!isNaN(lastVal)) {
-      rsiSeriesRef.current.update({ time: lastTime, value: lastVal })
-    }
-  }, [bars, showRsi, activeSymbol])
+  }, [showRsi, loadedSymbol])
 
   // ── 5a. Initialize MACD Chart ──────────────────────
   useEffect(() => {
@@ -971,6 +1010,37 @@ export const PriceChart: React.FC = () => {
     macdSignalSeriesRef.current = macdSignalSeries
     macdHistSeriesRef.current = macdHistSeries
 
+    const currentBars = ChartDataManager.getChartBars(activeSymbol)
+    if (loadedSymbol === activeSymbol && currentBars.length > 0) {
+      const closePrices = currentBars.map((b) => b.close)
+      const { macdLine, signalLine, histogram } = calculateMACD(closePrices)
+      const macdData = currentBars.map((b, i) => {
+        const val = macdLine[i]
+        return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+      })
+      macdDataRef.current = macdData
+      macdLineSeries.setData(macdData as any)
+      macdSignalSeries.setData(
+        currentBars.map((b, i) => {
+          const val = signalLine[i]
+          return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+        }) as any
+      )
+      macdHistSeries.setData(
+        currentBars.map((b, i) => {
+          const val = histogram[i]
+          return isNaN(val)
+            ? { time: b.time }
+            : {
+                time: b.time,
+                value: val,
+                color: val >= 0 ? 'rgba(38, 208, 124, 0.5)' : 'rgba(242, 54, 69, 0.5)',
+              }
+        }) as any
+      )
+      macdDataSetRef.current = true
+    }
+
     const mainRange = chartRef.current?.timeScale().getVisibleLogicalRange()
     if (mainRange) {
       newChart.timeScale().setVisibleLogicalRange(mainRange)
@@ -999,59 +1069,7 @@ export const PriceChart: React.FC = () => {
       }
       macdDataSetRef.current = false
     }
-  }, [showMacd, activeSymbol])
-
-  // ── 5b. Update MACD Data ───────────────────────────
-  useEffect(() => {
-    if (!showMacd || bars.length === 0 || !macdLineSeriesRef.current || !macdSignalSeriesRef.current || !macdHistSeriesRef.current || loadedSymbolRef.current !== activeSymbol) return
-
-    const closePrices = bars.map((b) => b.close)
-    const { macdLine, signalLine, histogram } = calculateMACD(closePrices)
-    const lastIdx = bars.length - 1
-    const lastTime = bars[lastIdx].time
-
-    const macdData = bars.map((b, i) => {
-      const val = macdLine[i]
-      return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
-    })
-    macdDataRef.current = macdData
-
-    if (!macdDataSetRef.current) {
-      macdLineSeriesRef.current.setData(macdData)
-      macdSignalSeriesRef.current.setData(
-        bars.map((b, i) => {
-          const val = signalLine[i]
-          return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
-        })
-      )
-      macdHistSeriesRef.current.setData(
-        bars.map((b, i) => {
-          const val = histogram[i]
-          return isNaN(val)
-            ? { time: b.time }
-            : {
-                time: b.time,
-                value: val,
-                color: val >= 0 ? 'rgba(38, 208, 124, 0.5)' : 'rgba(242, 54, 69, 0.5)',
-              }
-        })
-      )
-      macdDataSetRef.current = true
-    } else {
-      const mlVal = macdLine[lastIdx]
-      const msVal = signalLine[lastIdx]
-      const hVal = histogram[lastIdx]
-      if (!isNaN(mlVal)) macdLineSeriesRef.current.update({ time: lastTime, value: mlVal })
-      if (!isNaN(msVal)) macdSignalSeriesRef.current.update({ time: lastTime, value: msVal })
-      if (!isNaN(hVal)) {
-        macdHistSeriesRef.current.update({
-          time: lastTime,
-          value: hVal,
-          color: hVal >= 0 ? 'rgba(38, 208, 124, 0.5)' : 'rgba(242, 54, 69, 0.5)',
-        })
-      }
-    }
-  }, [bars, showMacd, activeSymbol])
+  }, [showMacd, loadedSymbol])
 
   // ── 6a. Initialize ADX Chart ───────────────────────
   useEffect(() => {
@@ -1107,6 +1125,30 @@ export const PriceChart: React.FC = () => {
     adxPlusDiSeriesRef.current = adxPlusDiSeries
     adxMinusDiSeriesRef.current = adxMinusDiSeries
 
+    const currentBars = ChartDataManager.getChartBars(activeSymbol)
+    if (loadedSymbol === activeSymbol && currentBars.length > 0) {
+      const { adx: adxVals, plusDI, minusDI } = calculateADX(currentBars)
+      const adxData = currentBars.map((b, i) => {
+        const val = adxVals[i]
+        return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+      })
+      adxDataRef.current = adxData
+      adxSeries.setData(adxData as any)
+      adxPlusDiSeries.setData(
+        currentBars.map((b, i) => {
+          const val = plusDI[i]
+          return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+        }) as any
+      )
+      adxMinusDiSeries.setData(
+        currentBars.map((b, i) => {
+          const val = minusDI[i]
+          return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
+        }) as any
+      )
+      adxDataSetRef.current = true
+    }
+
     const mainRange = chartRef.current?.timeScale().getVisibleLogicalRange()
     if (mainRange) {
       newChart.timeScale().setVisibleLogicalRange(mainRange)
@@ -1135,46 +1177,7 @@ export const PriceChart: React.FC = () => {
       }
       adxDataSetRef.current = false
     }
-  }, [showAdx, activeSymbol])
-
-  // ── 6b. Update ADX Data ────────────────────────────
-  useEffect(() => {
-    if (!showAdx || bars.length === 0 || !adxSeriesRef.current || !adxPlusDiSeriesRef.current || !adxMinusDiSeriesRef.current || loadedSymbolRef.current !== activeSymbol) return
-
-    const { adx: adxVals, plusDI, minusDI } = calculateADX(bars)
-    const lastIdx = bars.length - 1
-    const lastTime = bars[lastIdx].time
-
-    const adxData = bars.map((b, i) => {
-      const val = adxVals[i]
-      return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
-    })
-    adxDataRef.current = adxData
-
-    if (!adxDataSetRef.current) {
-      adxSeriesRef.current.setData(adxData)
-      adxPlusDiSeriesRef.current.setData(
-        bars.map((b, i) => {
-          const val = plusDI[i]
-          return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
-        })
-      )
-      adxMinusDiSeriesRef.current.setData(
-        bars.map((b, i) => {
-          const val = minusDI[i]
-          return isNaN(val) ? { time: b.time } : { time: b.time, value: val }
-        })
-      )
-      adxDataSetRef.current = true
-    } else {
-      const adxVal = adxVals[lastIdx]
-      const plusDiVal = plusDI[lastIdx]
-      const minusDiVal = minusDI[lastIdx]
-      if (!isNaN(adxVal)) adxSeriesRef.current.update({ time: lastTime, value: adxVal })
-      if (!isNaN(plusDiVal)) adxPlusDiSeriesRef.current.update({ time: lastTime, value: plusDiVal })
-      if (!isNaN(minusDiVal)) adxMinusDiSeriesRef.current.update({ time: lastTime, value: minusDiVal })
-    }
-  }, [bars, showAdx, activeSymbol])
+  }, [showAdx, loadedSymbol])
 
   // ── 7. Time Scale & Crosshair Synchronization Loop ───────────
   useEffect(() => {
@@ -1257,7 +1260,7 @@ export const PriceChart: React.FC = () => {
     return () => {
       unsubs.forEach((unsub) => unsub())
     }
-  }, [showRsi, showMacd, showAdx, activeSymbol])
+  }, [showRsi, showMacd, showAdx, activeSymbol, loadedSymbol])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#10121a' }}>

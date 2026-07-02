@@ -41,7 +41,7 @@ if docker ps | grep -q "quantstation-questdb"; then
     log "Exporting tables via SQL..."
     # Export key tables as CSV
     for TABLE in ticks ohlcv options_chain order_audit pnl_snapshots; do
-      curl -sf "http://localhost:9000/exp?query=SELECT+*+FROM+$TABLE" \
+      curl -sf "http://localhost:9002/exp?query=SELECT+*+FROM+$TABLE" \
         -o "$BACKUP_DIR/${TABLE}_${TIMESTAMP}.csv" 2>/dev/null && \
         ok "Exported $TABLE" || log "  $TABLE: no data or export failed"
     done

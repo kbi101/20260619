@@ -66,7 +66,7 @@ graph TB
 |:----------------------|:-------|:----------|:---------------------|
 | Spring Boot WebSocket | `8080` | WS/STOMP  | UI ↔ Backend         |
 | Spring Boot Actuator  | `8081` | HTTP      | Health, metrics      |
-| QuestDB Web Console   | `9000` | HTTP      | Admin/debug          |
+| QuestDB Web Console   | `9002` | HTTP      | Admin/debug          |
 | QuestDB ILP           | `9009` | TCP       | Tick ingestion       |
 | QuestDB PG Wire       | `8812` | TCP       | SQL queries          |
 | Redis                 | `6379` | TCP       | State read/write     |

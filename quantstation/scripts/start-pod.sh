@@ -89,7 +89,7 @@ wait_for_service "Redis" \
   "docker exec quantstation-redis redis-cli ping | grep -q PONG" 30
 
 wait_for_service "QuestDB" \
-  "curl -sf http://localhost:9000/exec?query=SELECT+1" 45
+  "curl -sf http://localhost:9002/exec?query=SELECT+1" 45
 
 wait_for_service "Core Engine" \
   "curl -sf http://localhost:8081/actuator/health | grep -q UP" 60
@@ -102,7 +102,7 @@ log "═════════════════════════
 log "  Spring Boot:    http://localhost:8080"
 log "  WebSocket:      ws://localhost:8080/ws"
 log "  Actuator:       http://localhost:8081"
-log "  QuestDB:        http://localhost:9000"
+log "  QuestDB:        http://localhost:9002"
 log "  Redis:          localhost:6379"
 log "  IB Gateway:     localhost:4002 (paper)"
 log "═══════════════════════════════════════════════"

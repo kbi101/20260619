@@ -17,6 +17,7 @@ out/
 node_modules/
 dist/
 dist-electron/
+dist-packaged/
 .vite/
 *.tsbuildinfo
 

@@ -38,6 +38,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   readSnapshot: (filename: string, date?: string) => ipcRenderer.invoke('snapshots:read', filename, date),
   saveSnapshot: (payload: { category: string; filename: string; base64Data: string }) => 
     ipcRenderer.invoke('snapshots:save', payload),
+  deleteSnapshot: (filename: string, date?: string) => ipcRenderer.invoke('snapshots:delete', filename, date),
   readClipboardImage: () => ipcRenderer.invoke('clipboard:read-image'),
   getAvailableDates: () => ipcRenderer.invoke('snapshots:get-dates'),
   onSnapshotsUpdated: (callback: (snapshots: any[]) => void) => {
@@ -74,6 +75,7 @@ declare global {
       getSnapshots: (date?: string) => Promise<SnapshotMeta[]>
       readSnapshot: (filename: string, date?: string) => Promise<string>
       saveSnapshot: (payload: { category: string; filename: string; base64Data: string }) => Promise<void>
+      deleteSnapshot: (filename: string, date?: string) => Promise<boolean>
       readClipboardImage: () => Promise<string | null>
       getAvailableDates: () => Promise<string[]>
       onSnapshotsUpdated: (callback: (snapshots: SnapshotMeta[]) => void) => () => void

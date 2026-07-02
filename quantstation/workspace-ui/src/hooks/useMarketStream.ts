@@ -8,6 +8,7 @@ import { Client } from '@stomp/stompjs'
 import { useStore } from '../store/useStore'
 import type { Tick } from '../types/market'
 import type { Order, Position, PnlSnapshot } from '../types/order'
+import { processIncomingTick } from '../services/ChartDataManager'
 
 const WS_URL = 'ws://localhost:8080/ws'
 
@@ -181,6 +182,7 @@ export function useMarketStream(): void {
             try {
               const tick: Tick = JSON.parse(message.body)
               updateTick(tick)
+              processIncomingTick(tick)
             } catch (err) {
               console.error(`[QuantStation] Failed to parse tick message for ${symbol} on ${dest}:`, err)
             }

@@ -12,7 +12,7 @@ services:
     container_name: quantstation-questdb
     hostname: questdb
     ports:
-      - "9000:9000"   # Web Console + REST API
+      - "9002:9000"   # Web Console + REST API
       - "9009:9009"   # InfluxDB Line Protocol (tick ingestion)
       - "8812:8812"   # PostgreSQL Wire Protocol (SQL queries)
     volumes:

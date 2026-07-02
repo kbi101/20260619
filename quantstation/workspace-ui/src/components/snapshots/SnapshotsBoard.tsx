@@ -218,6 +218,65 @@ export const SnapshotsBoard: React.FC = () => {
     }
   }, [activeCategory, snapshots])
 
+  const handleRefresh = async () => {
+    try {
+      setLoading(true)
+      const dates = await window.electronAPI.getAvailableDates()
+      setAvailableDates(dates)
+      const today = getTodayStr()
+      const newSelectedDate = dates.includes(selectedDate) ? selectedDate : (dates.includes(today) ? today : (dates[0] || today))
+      if (newSelectedDate !== selectedDate) {
+        setSelectedDate(newSelectedDate)
+      } else {
+        let datesToFetch = [newSelectedDate]
+        if (showWeek) {
+          const startIndex = dates.indexOf(newSelectedDate)
+          const targetIndex = startIndex !== -1 ? startIndex : 0
+          datesToFetch = dates.slice(targetIndex, targetIndex + 7)
+        }
+
+        const promises = datesToFetch.map(async (d) => {
+          try {
+            return await window.electronAPI.getSnapshots(d)
+          } catch (err) {
+            return []
+          }
+        })
+
+        const results = await Promise.all(promises)
+        const mergedList = results.flat().sort((a, b) => a.mtime - b.mtime)
+        setSnapshots(mergedList)
+      }
+    } catch (err) {
+      console.error('[SnapshotsBoard] Failed to refresh snapshots:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteSnapshot = async () => {
+    if (!selectedSnapshot) return
+    const filename = selectedSnapshot.filename
+    const confirmDelete = window.confirm(`Are you sure you want to delete the snapshot "${filename}"?`)
+    if (!confirmDelete) return
+
+    try {
+      setImgLoading(true)
+      const success = await window.electronAPI.deleteSnapshot(filename, selectedDate)
+      if (success) {
+        setSnapshots(prev => prev.filter(s => s.filename !== filename))
+        setSelectedSnapshot(null)
+      } else {
+        alert('Failed to delete snapshot.')
+      }
+    } catch (err) {
+      console.error('[SnapshotsBoard] Failed to delete snapshot:', err)
+      alert(`Error deleting snapshot: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setImgLoading(false)
+    }
+  }
+
   // 1. Fetch available dates on mount
   useEffect(() => {
     let active = true
@@ -770,34 +829,58 @@ export const SnapshotsBoard: React.FC = () => {
               }}>
                 Select Date
               </label>
-              <select
-                value={selectedDate}
-                onChange={(e) => {
-                  setSelectedDate(e.target.value)
-                  setZoomLevel(1)
-                  setAutoFollow(true)
-                }}
-                disabled={showWeek}
-                style={{
-                  background: 'var(--qs-bg-primary)',
-                  border: '1px solid var(--qs-border)',
-                  borderRadius: 'var(--qs-radius-sm)',
-                  color: showWeek ? 'var(--qs-text-muted)' : 'var(--qs-text-primary)',
-                  padding: '6px 8px',
-                  fontSize: 'var(--qs-font-xs)',
-                  fontFamily: 'var(--qs-font-mono)',
-                  outline: 'none',
-                  cursor: showWeek ? 'not-allowed' : 'pointer',
-                  width: '100%',
-                  opacity: showWeek ? 0.6 : 1,
-                }}
-              >
-                {availableDates.map((dateVal) => (
-                  <option key={dateVal} value={dateVal}>
-                    {formatDateLabel(dateVal)}
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <select
+                  value={selectedDate}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value)
+                    setZoomLevel(1)
+                    setAutoFollow(true)
+                  }}
+                  disabled={showWeek}
+                  style={{
+                    background: 'var(--qs-bg-primary)',
+                    border: '1px solid var(--qs-border)',
+                    borderRadius: 'var(--qs-radius-sm)',
+                    color: showWeek ? 'var(--qs-text-muted)' : 'var(--qs-text-primary)',
+                    padding: '6px 8px',
+                    fontSize: 'var(--qs-font-xs)',
+                    fontFamily: 'var(--qs-font-mono)',
+                    outline: 'none',
+                    cursor: showWeek ? 'not-allowed' : 'pointer',
+                    flex: 1,
+                    opacity: showWeek ? 0.6 : 1,
+                  }}
+                >
+                  {availableDates.map((dateVal) => (
+                    <option key={dateVal} value={dateVal}>
+                      {formatDateLabel(dateVal)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={handleRefresh}
+                  title="Refresh Snapshots Folder"
+                  style={{
+                    background: 'var(--qs-bg-tertiary)',
+                    border: '1px solid var(--qs-border)',
+                    borderRadius: 'var(--qs-radius-sm)',
+                    color: 'var(--qs-text-secondary)',
+                    padding: '6px 10px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'all var(--qs-transition-fast)',
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.color = 'var(--qs-text-primary)'}
+                  onMouseOut={(e) => e.currentTarget.style.color = 'var(--qs-text-secondary)'}
+                >
+                  ⟳
+                </button>
+              </div>
 
               {/* Show Week Checkbox Toggle */}
               <label style={{
@@ -929,6 +1012,35 @@ export const SnapshotsBoard: React.FC = () => {
               {/* View options */}
               {imgData && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button
+                    onClick={handleDeleteSnapshot}
+                    style={{
+                      background: 'var(--qs-red-bg)',
+                      border: '1px solid var(--qs-red)',
+                      color: 'var(--qs-red)',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      padding: '4px 10px',
+                      borderRadius: 'var(--qs-radius-sm)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      outline: 'none',
+                      marginRight: '8px',
+                      transition: 'all var(--qs-transition-fast)',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = 'var(--qs-red)'
+                      e.currentTarget.style.color = '#ffffff'
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = 'var(--qs-red-bg)'
+                      e.currentTarget.style.color = 'var(--qs-red)'
+                    }}
+                  >
+                    🗑 Delete
+                  </button>
                   {selectedDate !== getTodayStr() && (
                     <button
                       onClick={async () => {

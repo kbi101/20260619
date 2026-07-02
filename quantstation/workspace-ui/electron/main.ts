@@ -450,6 +450,21 @@ ipcMain.handle('snapshots:save', async (event, payload: { category: string; file
   console.log(`[Snapshots IPC] Successfully saved snapshot file: ${filePath}`)
 })
 
+ipcMain.handle('snapshots:delete', async (event, filename: string, date?: string) => {
+  if (path.basename(filename) !== filename) {
+    throw new Error('Invalid filename path traversal query')
+  }
+  const dir = getDirForDate(date)
+  const filePath = path.join(dir, filename)
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filename}`)
+  }
+  await fs.promises.unlink(filePath)
+  console.log(`[Snapshots IPC] Successfully deleted snapshot file: ${filePath}`)
+  notifySnapshotsUpdated()
+  return true
+})
+
 ipcMain.handle('clipboard:read-image', async () => {
   const image = clipboard.readImage()
   if (image.isEmpty()) {

@@ -105,7 +105,7 @@ The services run on a custom bridge network `quantstation-net` (subnet `172.18.0
 
 | Service       | Container Name            | IP           | Memory | Ports / Configuration |
 |:--------------|:--------------------------|:-------------|:-------|:----------------------|
-| `questdb`     | `quantstation-questdb`    | `172.18.0.10`| 8GB    | Ports: `9000`, `9009` |
+| `questdb`     | `quantstation-questdb`    | `172.18.0.10`| 8GB    | Ports: `9002`, `9009` |
 | `redis`       | `quantstation-redis`      | `172.18.0.11`| 2GB    | Port: `6379`          |
 | `core-engine` | `quantstation-core-engine`| (dynamic)    | 2GB    | Ports: `8080`, `8081` |
 

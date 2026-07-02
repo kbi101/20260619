@@ -57,7 +57,7 @@ Spring Boot acts as the central nervous system bridging both.
 │                   │  (Docker)     │    │   (Docker)    │   │ (Docker) │ │
 │                   │  :4002 paper  │    │   :9009 ILP   │   │ :6379    │ │
 │                   └──────┬───────┘    │   :8812 PG    │   └──────────┘ │
-│                          │            │   :9000 HTTP   │                │
+│                          │            │   :9002 HTTP   │                │
 │                          │            └──────────────┘                 │
 └──────────────────────────┼─────────────────────────────────────────────┘
                            │
@@ -177,7 +177,7 @@ com.quantstation/
 | **Memory Limit**  | 8GB                              |
 | **Ingestion**     | InfluxDB Line Protocol (TCP :9009) |
 | **SQL Queries**   | PostgreSQL Wire Protocol (:8812) |
-| **Web Console**   | HTTP :9000                       |
+| **Web Console**   | HTTP :9002                       |
 | **Workers**       | 4 ILP workers, 2 PG workers     |
 
 **Role:** Engineered for massive time-series ingestion. Acts as the local tick plant, capturing the raw market data hose and flushing to NVMe for backtesting and historical chart rendering.
@@ -414,7 +414,7 @@ The `MarketDataProvider` interface enables hot-swappable data sources:
 |:----------------------|:-------|:----------|:---------------------|:---------------------|
 | Spring Boot           | `8080` | HTTP/WS   | Host                 | REST API + STOMP WS  |
 | Spring Boot Actuator  | `8081` | HTTP      | Host                 | Health, metrics      |
-| QuestDB Web Console   | `9000` | HTTP      | Host + Docker bridge | Admin/debug          |
+| QuestDB Web Console   | `9002` | HTTP      | Host + Docker bridge | Admin/debug          |
 | QuestDB ILP           | `9009` | TCP       | Host + Docker bridge | Tick ingestion       |
 | QuestDB PG Wire       | `8812` | TCP       | Host + Docker bridge | SQL queries          |
 | Redis                 | `6379` | TCP       | Host + Docker bridge | State read/write     |
