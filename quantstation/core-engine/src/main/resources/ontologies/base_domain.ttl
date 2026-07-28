@@ -1,0 +1,573 @@
+@prefix : <http://quant.example.org/ontology/strategy#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://quant.example.org/ontology/strategy> a owl:Ontology ;
+    rdfs:label "QuantTune Strategy Domain Ontology" ;
+    rdfs:comment "Base OWL/RDFS definitions aligned with FIBO, OWL-Time, and QUDT." .
+
+:Bar1Week a :WeeklyInterval ;
+    rdfs:label "1-Week Bar Interval" .
+
+:EquityStock rdfs:label "Individual Equity Stock" ;
+    rdfs:subClassOf :FinancialInstrument .
+
+:MeanReversionIWM_15m a :Strategy ;
+    rdfs:label "IWM 15-Min Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :IWM .
+
+:MeanReversionQQQ_15m a :Strategy ;
+    rdfs:label "QQQ 15-Min Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :QQQ .
+
+:MeanReversionSPY_15m a :Strategy ;
+    rdfs:label "SPY 15-Min Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :SPY .
+
+:MeanReversionSPY_1D a :Strategy ;
+    rdfs:label "SPY Daily Mean Reversion Strategy" ;
+    :activeInRegime :MeanReversionRegime ;
+    :operatesOnTimeframe :Bar1Day ;
+    :tradesInstrument :SPY .
+
+:MeanReversionXLB_15m a :Strategy ;
+    rdfs:label "XLB 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLB .
+
+:MeanReversionXLC_15m a :Strategy ;
+    rdfs:label "XLC 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLC .
+
+:MeanReversionXLE_15m a :Strategy ;
+    rdfs:label "XLE 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLE .
+
+:MeanReversionXLF_15m a :Strategy ;
+    rdfs:label "XLF 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLF .
+
+:MeanReversionXLI_15m a :Strategy ;
+    rdfs:label "XLI 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLI .
+
+:MeanReversionXLK_15m a :Strategy ;
+    rdfs:label "XLK 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLK .
+
+:MeanReversionXLP_15m a :Strategy ;
+    rdfs:label "XLP 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLP .
+
+:MeanReversionXLRE_15m a :Strategy ;
+    rdfs:label "XLRE 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLRE .
+
+:MeanReversionXLU_15m a :Strategy ;
+    rdfs:label "XLU 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLU .
+
+:MeanReversionXLV_15m a :Strategy ;
+    rdfs:label "XLV 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLV .
+
+:MeanReversionXLY_15m a :Strategy ;
+    rdfs:label "XLY 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :XLY .
+
+# ── Consumer Staples Constituent Stock Strategies (Inheriting XLP Policy) ──────
+:MeanReversionWMT_15m a :Strategy ;
+    rdfs:label "WMT 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :WMT .
+
+:MeanReversionKO_15m a :Strategy ;
+    rdfs:label "KO 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :KO .
+
+:MeanReversionKMB_15m a :Strategy ;
+    rdfs:label "KMB 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :KMB .
+
+:MeanReversionTGT_15m a :Strategy ;
+    rdfs:label "TGT 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :TGT .
+
+:MeanReversionPG_15m a :Strategy ;
+    rdfs:label "PG 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :PG .
+
+:MeanReversionCOST_15m a :Strategy ;
+    rdfs:label "COST 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :COST .
+
+:MeanReversionPEP_15m a :Strategy ;
+    rdfs:label "PEP 15m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar15Min ;
+    :tradesInstrument :PEP .
+
+:MomentumQQQ_1D a :Strategy ;
+    rdfs:label "QQQ Daily Momentum Strategy" ;
+    :activeInRegime :TrendingRegime ;
+    :operatesOnTimeframe :Bar1Day ;
+    :tradesInstrument :QQQ .
+
+:activeInRegime a owl:ObjectProperty ;
+    rdfs:label "Strategy is active in this market regime" ;
+    rdfs:domain :Strategy ;
+    rdfs:range :MarketRegime .
+
+:hasTargetPolicy a owl:ObjectProperty ;
+    rdfs:label "Strategy's assigned target policy (injected by SHACL)" ;
+    rdfs:domain :Strategy ;
+    rdfs:range :TargetPolicy .
+
+:operatesOnTimeframe a owl:ObjectProperty ;
+    rdfs:label "Strategy operates on this timeframe" ;
+    rdfs:domain :Strategy ;
+    rdfs:range :TimeInterval .
+
+:stopLossZScore a owl:DatatypeProperty ;
+    rdfs:label "Stop-loss Z-score boundary" ;
+    rdfs:domain :TargetPolicy ;
+    rdfs:range xsd:decimal .
+
+:takeProfitZScore a owl:DatatypeProperty ;
+    rdfs:label "Take-profit Z-score boundary" ;
+    rdfs:domain :TargetPolicy ;
+    rdfs:range xsd:decimal .
+
+:targetType a owl:DatatypeProperty ;
+    rdfs:label "Target classification type identifier" ;
+    rdfs:domain :TargetPolicy ;
+    rdfs:range xsd:string .
+
+:timeStopMinutes a owl:DatatypeProperty ;
+    rdfs:label "Time-stop in minutes (max holding period)" ;
+    rdfs:domain :TargetPolicy ;
+    rdfs:range xsd:integer .
+
+:maxRsiThreshold a owl:DatatypeProperty ;
+    rdfs:label "Maximum RSI value allowed for Long entry" ;
+    rdfs:domain :TargetPolicy ;
+    rdfs:range xsd:decimal .
+
+:maxAdxThreshold a owl:DatatypeProperty ;
+    rdfs:label "Maximum ADX value allowed for Mean-Reversion entry" ;
+    rdfs:domain :TargetPolicy ;
+    rdfs:range xsd:decimal .
+
+:requireMacdBullish a owl:DatatypeProperty ;
+    rdfs:label "Requires MACD histogram to be positive (> 0)" ;
+    rdfs:domain :TargetPolicy ;
+    rdfs:range xsd:boolean .
+
+:useHmmFilter a owl:DatatypeProperty ;
+    rdfs:label "Requires Gaussian HMM low-volatility regime state (S=0)" ;
+    rdfs:domain :TargetPolicy ;
+    rdfs:range xsd:boolean .
+
+:tradesInstrument a owl:ObjectProperty ;
+    rdfs:label "Strategy trades this instrument" ;
+    rdfs:domain :Strategy ;
+    rdfs:range :FinancialInstrument .
+
+:DailyInterval rdfs:label "Daily Bar Interval" ;
+    rdfs:subClassOf :TimeInterval .
+
+:IWM a :EquityETF ;
+    rdfs:label "iShares Russell 2000 ETF" .
+
+:IntradayInterval rdfs:label "Intraday Bar Interval" ;
+    rdfs:subClassOf :TimeInterval .
+
+:MeanReversionRegime a :MarketRegime ;
+    rdfs:label "Mean-Reversion / Choppy Regime (ADX < 20)" .
+
+:TrendingRegime a :MarketRegime ;
+    rdfs:label "Trending Market Regime (ADX > 25)" .
+
+:WeeklyInterval rdfs:label "Weekly Bar Interval" ;
+    rdfs:subClassOf :TimeInterval .
+
+:XLB a :EquityETF ;
+    rdfs:label "Materials Select Sector SPDR Fund" ;
+    :tickerSymbol "XLB"^^xsd:string .
+
+:XLC a :EquityETF ;
+    rdfs:label "Communication Services Select Sector SPDR Fund" ;
+    :tickerSymbol "XLC"^^xsd:string .
+
+:XLE a :EquityETF ;
+    rdfs:label "Energy Select Sector SPDR Fund" ;
+    :tickerSymbol "XLE"^^xsd:string .
+
+:XLF a :EquityETF ;
+    rdfs:label "Financial Select Sector SPDR Fund" ;
+    :tickerSymbol "XLF"^^xsd:string .
+
+:XLI a :EquityETF ;
+    rdfs:label "Industrial Select Sector SPDR Fund" ;
+    :tickerSymbol "XLI"^^xsd:string .
+
+:XLK a :EquityETF ;
+    rdfs:label "Technology Select Sector SPDR Fund" ;
+    :tickerSymbol "XLK"^^xsd:string .
+
+:XLP a :EquityETF ;
+    rdfs:label "Consumer Staples Select Sector SPDR Fund" ;
+    :tickerSymbol "XLP"^^xsd:string .
+
+:XLRE a :EquityETF ;
+    rdfs:label "Real Estate Select Sector SPDR Fund" ;
+    :tickerSymbol "XLRE"^^xsd:string .
+
+:XLU a :EquityETF ;
+    rdfs:label "Utilities Select Sector SPDR Fund" ;
+    :tickerSymbol "XLU"^^xsd:string .
+
+:XLV a :EquityETF ;
+    rdfs:label "Health Care Select Sector SPDR Fund" ;
+    :tickerSymbol "XLV"^^xsd:string .
+
+:XLY a :EquityETF ;
+    rdfs:label "Consumer Discretionary Select Sector SPDR Fund" ;
+    :tickerSymbol "XLY"^^xsd:string .
+
+:Bar1Day a :DailyInterval ;
+    rdfs:label "1-Day Bar Interval" .
+
+:QQQ a :EquityETF ;
+    rdfs:label "Invesco QQQ Trust (Nasdaq-100 ETF)" .
+
+:SPY a :EquityETF ;
+    rdfs:label "SPDR S&P 500 ETF Trust" .
+
+:FinancialInstrument a owl:Class ;
+    rdfs:label "Base Financial Instrument (FIBO aligned)" .
+
+:MarketRegime a owl:Class ;
+    rdfs:label "Market Regime Classification" .
+
+:TimeInterval a owl:Class ;
+    rdfs:label "Time Interval (OWL-Time aligned)" .
+
+:TargetPolicy a owl:Class ;
+    rdfs:label "Execution Target Policy" .
+
+:Bar15Min a :IntradayInterval ;
+    rdfs:label "15-Minute Bar Interval" .
+
+:Bar5Min a :IntradayInterval ;
+    rdfs:label "5-Minute Bar Interval" .
+
+# ── 5-Minute Intraday Strategy Individuals ────────────────────────────────────
+:MeanReversionSPY_5m a :Strategy ;
+    rdfs:label "SPY 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :SPY .
+
+:MeanReversionQQQ_5m a :Strategy ;
+    rdfs:label "QQQ 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :QQQ .
+
+:MeanReversionIWM_5m a :Strategy ;
+    rdfs:label "IWM 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :IWM .
+
+:MeanReversionXLK_5m a :Strategy ;
+    rdfs:label "XLK 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLK .
+
+:MeanReversionXLF_5m a :Strategy ;
+    rdfs:label "XLF 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLF .
+
+:MeanReversionXLV_5m a :Strategy ;
+    rdfs:label "XLV 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLV .
+
+:MeanReversionXLY_5m a :Strategy ;
+    rdfs:label "XLY 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLY .
+
+:MeanReversionXLP_5m a :Strategy ;
+    rdfs:label "XLP 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLP .
+
+:MeanReversionXLE_5m a :Strategy ;
+    rdfs:label "XLE 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLE .
+
+:MeanReversionXLI_5m a :Strategy ;
+    rdfs:label "XLI 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLI .
+
+:MeanReversionXLB_5m a :Strategy ;
+    rdfs:label "XLB 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLB .
+
+:MeanReversionXLU_5m a :Strategy ;
+    rdfs:label "XLU 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLU .
+
+:MeanReversionXLRE_5m a :Strategy ;
+    rdfs:label "XLRE 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLRE .
+
+:MeanReversionXLC_5m a :Strategy ;
+    rdfs:label "XLC 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :XLC .
+
+:MeanReversionWMT_5m a :Strategy ;
+    rdfs:label "WMT 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :WMT .
+
+:MeanReversionKO_5m a :Strategy ;
+    rdfs:label "KO 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :KO .
+
+:MeanReversionKMB_5m a :Strategy ;
+    rdfs:label "KMB 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :KMB .
+
+:MeanReversionTGT_5m a :Strategy ;
+    rdfs:label "TGT 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :TGT .
+
+:MeanReversionPG_5m a :Strategy ;
+    rdfs:label "PG 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :PG .
+
+:MeanReversionCOST_5m a :Strategy ;
+    rdfs:label "COST 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :COST .
+
+:MeanReversionPEP_5m a :Strategy ;
+    rdfs:label "PEP 5m Mean Reversion Strategy" ;
+    :activeInRegime :HighVolatilityRegime ;
+    :operatesOnTimeframe :Bar5Min ;
+    :tradesInstrument :PEP .
+
+:Bar1Hour a :IntradayInterval ;
+    rdfs:label "1-Hour Bar Interval" .
+
+:Bar4Hour a :IntradayInterval ;
+    rdfs:label "4-Hour Bar Interval" .
+
+# ── 1-Hour Intraday Strategy Individuals ──────────────────────────────────────
+:MeanReversionSPY_1h a :Strategy ; rdfs:label "SPY 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :SPY .
+:MeanReversionQQQ_1h a :Strategy ; rdfs:label "QQQ 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :QQQ .
+:MeanReversionIWM_1h a :Strategy ; rdfs:label "IWM 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :IWM .
+:MeanReversionXLK_1h a :Strategy ; rdfs:label "XLK 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLK .
+:MeanReversionXLF_1h a :Strategy ; rdfs:label "XLF 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLF .
+:MeanReversionXLV_1h a :Strategy ; rdfs:label "XLV 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLV .
+:MeanReversionXLY_1h a :Strategy ; rdfs:label "XLY 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLY .
+:MeanReversionXLP_1h a :Strategy ; rdfs:label "XLP 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLP .
+:MeanReversionXLE_1h a :Strategy ; rdfs:label "XLE 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLE .
+:MeanReversionXLI_1h a :Strategy ; rdfs:label "XLI 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLI .
+:MeanReversionXLB_1h a :Strategy ; rdfs:label "XLB 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLB .
+:MeanReversionXLU_1h a :Strategy ; rdfs:label "XLU 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLU .
+:MeanReversionXLRE_1h a :Strategy ; rdfs:label "XLRE 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLRE .
+:MeanReversionXLC_1h a :Strategy ; rdfs:label "XLC 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :XLC .
+:MeanReversionWMT_1h a :Strategy ; rdfs:label "WMT 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :WMT .
+:MeanReversionKO_1h a :Strategy ; rdfs:label "KO 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :KO .
+:MeanReversionKMB_1h a :Strategy ; rdfs:label "KMB 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :KMB .
+:MeanReversionTGT_1h a :Strategy ; rdfs:label "TGT 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :TGT .
+:MeanReversionPG_1h a :Strategy ; rdfs:label "PG 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :PG .
+:MeanReversionCOST_1h a :Strategy ; rdfs:label "COST 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :COST .
+:MeanReversionPEP_1h a :Strategy ; rdfs:label "PEP 1h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar1Hour ; :tradesInstrument :PEP .
+
+# ── 4-Hour Intraday Strategy Individuals ──────────────────────────────────────
+:MeanReversionSPY_4h a :Strategy ; rdfs:label "SPY 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :SPY .
+:MeanReversionQQQ_4h a :Strategy ; rdfs:label "QQQ 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :QQQ .
+:MeanReversionIWM_4h a :Strategy ; rdfs:label "IWM 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :IWM .
+:MeanReversionXLK_4h a :Strategy ; rdfs:label "XLK 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLK .
+:MeanReversionXLF_4h a :Strategy ; rdfs:label "XLF 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLF .
+:MeanReversionXLV_4h a :Strategy ; rdfs:label "XLV 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLV .
+:MeanReversionXLY_4h a :Strategy ; rdfs:label "XLY 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLY .
+:MeanReversionXLP_4h a :Strategy ; rdfs:label "XLP 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLP .
+:MeanReversionXLE_4h a :Strategy ; rdfs:label "XLE 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLE .
+:MeanReversionXLI_4h a :Strategy ; rdfs:label "XLI 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLI .
+:MeanReversionXLB_4h a :Strategy ; rdfs:label "XLB 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLB .
+:MeanReversionXLU_4h a :Strategy ; rdfs:label "XLU 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLU .
+:MeanReversionXLRE_4h a :Strategy ; rdfs:label "XLRE 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLRE .
+:MeanReversionXLC_4h a :Strategy ; rdfs:label "XLC 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :XLC .
+:MeanReversionWMT_4h a :Strategy ; rdfs:label "WMT 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :WMT .
+:MeanReversionKO_4h a :Strategy ; rdfs:label "KO 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :KO .
+:MeanReversionKMB_4h a :Strategy ; rdfs:label "KMB 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :KMB .
+:MeanReversionTGT_4h a :Strategy ; rdfs:label "TGT 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :TGT .
+:MeanReversionPG_4h a :Strategy ; rdfs:label "PG 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :PG .
+:MeanReversionCOST_4h a :Strategy ; rdfs:label "COST 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :COST .
+:MeanReversionPEP_4h a :Strategy ; rdfs:label "PEP 4h Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar4Hour ; :tradesInstrument :PEP .
+
+:Bar2Min a :IntradayInterval ;
+    rdfs:label "2-Minute Bar Interval" .
+
+:Bar30Min a :IntradayInterval ;
+    rdfs:label "30-Minute Bar Interval" .
+
+# ── 2-Minute Intraday Strategy Individuals ──────────────────────────────────────
+:MeanReversionSPY_2m a :Strategy ; rdfs:label "SPY 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :SPY .
+:MeanReversionQQQ_2m a :Strategy ; rdfs:label "QQQ 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :QQQ .
+:MeanReversionIWM_2m a :Strategy ; rdfs:label "IWM 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :IWM .
+:MeanReversionXLK_2m a :Strategy ; rdfs:label "XLK 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLK .
+:MeanReversionXLF_2m a :Strategy ; rdfs:label "XLF 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLF .
+:MeanReversionXLV_2m a :Strategy ; rdfs:label "XLV 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLV .
+:MeanReversionXLY_2m a :Strategy ; rdfs:label "XLY 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLY .
+:MeanReversionXLP_2m a :Strategy ; rdfs:label "XLP 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLP .
+:MeanReversionXLE_2m a :Strategy ; rdfs:label "XLE 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLE .
+:MeanReversionXLI_2m a :Strategy ; rdfs:label "XLI 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLI .
+:MeanReversionXLB_2m a :Strategy ; rdfs:label "XLB 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLB .
+:MeanReversionXLU_2m a :Strategy ; rdfs:label "XLU 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLU .
+:MeanReversionXLRE_2m a :Strategy ; rdfs:label "XLRE 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLRE .
+:MeanReversionXLC_2m a :Strategy ; rdfs:label "XLC 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :XLC .
+:MeanReversionWMT_2m a :Strategy ; rdfs:label "WMT 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :WMT .
+:MeanReversionKO_2m a :Strategy ; rdfs:label "KO 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :KO .
+:MeanReversionKMB_2m a :Strategy ; rdfs:label "KMB 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :KMB .
+:MeanReversionTGT_2m a :Strategy ; rdfs:label "TGT 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :TGT .
+:MeanReversionPG_2m a :Strategy ; rdfs:label "PG 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :PG .
+:MeanReversionCOST_2m a :Strategy ; rdfs:label "COST 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :COST .
+:MeanReversionPEP_2m a :Strategy ; rdfs:label "PEP 2m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar2Min ; :tradesInstrument :PEP .
+
+# ── 30-Minute Intraday Strategy Individuals ────────────────────────────────────
+:MeanReversionSPY_30m a :Strategy ; rdfs:label "SPY 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :SPY .
+:MeanReversionQQQ_30m a :Strategy ; rdfs:label "QQQ 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :QQQ .
+:MeanReversionIWM_30m a :Strategy ; rdfs:label "IWM 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :IWM .
+:MeanReversionXLK_30m a :Strategy ; rdfs:label "XLK 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLK .
+:MeanReversionXLF_30m a :Strategy ; rdfs:label "XLF 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLF .
+:MeanReversionXLV_30m a :Strategy ; rdfs:label "XLV 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLV .
+:MeanReversionXLY_30m a :Strategy ; rdfs:label "XLY 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLY .
+:MeanReversionXLP_30m a :Strategy ; rdfs:label "XLP 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLP .
+:MeanReversionXLE_30m a :Strategy ; rdfs:label "XLE 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLE .
+:MeanReversionXLI_30m a :Strategy ; rdfs:label "XLI 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLI .
+:MeanReversionXLB_30m a :Strategy ; rdfs:label "XLB 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLB .
+:MeanReversionXLU_30m a :Strategy ; rdfs:label "XLU 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLU .
+:MeanReversionXLRE_30m a :Strategy ; rdfs:label "XLRE 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLRE .
+:MeanReversionXLC_30m a :Strategy ; rdfs:label "XLC 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :XLC .
+:MeanReversionWMT_30m a :Strategy ; rdfs:label "WMT 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :WMT .
+:MeanReversionKO_30m a :Strategy ; rdfs:label "KO 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :KO .
+:MeanReversionKMB_30m a :Strategy ; rdfs:label "KMB 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :KMB .
+:MeanReversionTGT_30m a :Strategy ; rdfs:label "TGT 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :TGT .
+:MeanReversionPG_30m a :Strategy ; rdfs:label "PG 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :PG .
+:MeanReversionCOST_30m a :Strategy ; rdfs:label "COST 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :COST .
+:MeanReversionPEP_30m a :Strategy ; rdfs:label "PEP 30m Strategy" ; :activeInRegime :HighVolatilityRegime ; :operatesOnTimeframe :Bar30Min ; :tradesInstrument :PEP .
+
+:EquityETF rdfs:label "Exchange-Traded Fund (Equity)" ;
+    rdfs:subClassOf :FinancialInstrument .
+
+:HighVolatilityRegime a :MarketRegime ;
+    rdfs:label "High Volatility Market Regime (VIX > 20)" .
+
+:Strategy a owl:Class ;
+    rdfs:label "Backtesting Strategy" .
+
+# ── Consumer Staples Constituent Equity Instruments ────────────────────────────
+:WMT a :EquityStock ;
+    rdfs:label "Walmart Inc." ;
+    :tickerSymbol "WMT"^^xsd:string .
+
+:KO a :EquityStock ;
+    rdfs:label "The Coca-Cola Company" ;
+    :tickerSymbol "KO"^^xsd:string .
+
+:KMB a :EquityStock ;
+    rdfs:label "Kimberly-Clark Corporation" ;
+    :tickerSymbol "KMB"^^xsd:string .
+
+:TGT a :EquityStock ;
+    rdfs:label "Target Corporation" ;
+    :tickerSymbol "TGT"^^xsd:string .
+
+:PG a :EquityStock ;
+    rdfs:label "Procter & Gamble Company" ;
+    :tickerSymbol "PG"^^xsd:string .
+
+:COST a :EquityStock ;
+    rdfs:label "Costco Wholesale Corporation" ;
+    :tickerSymbol "COST"^^xsd:string .
+
+:PEP a :EquityStock ;
+    rdfs:label "PepsiCo, Inc." ;
+    :tickerSymbol "PEP"^^xsd:string .
+
+

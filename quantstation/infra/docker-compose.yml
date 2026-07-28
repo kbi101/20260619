@@ -12,9 +12,9 @@ services:
     container_name: quantstation-questdb
     hostname: questdb
     ports:
-      - "9002:9000"   # Web Console + REST API
-      - "9009:9009"   # InfluxDB Line Protocol (tick ingestion)
-      - "8812:8812"   # PostgreSQL Wire Protocol (SQL queries)
+      - "9022:9000"   # Web Console + REST API  (was 9002, conflicts with brew QuestDB on 20260408)
+      - "9909:9009"   # InfluxDB Line Protocol  (was 9009, conflicts with brew QuestDB on 20260408)
+      - "9812:8812"   # PostgreSQL Wire Protocol (was 8812, conflicts with brew QuestDB on 20260408)
     volumes:
       - questdb_data:/var/lib/questdb
       - ./questdb/server.conf:/var/lib/questdb/conf/server.conf:ro

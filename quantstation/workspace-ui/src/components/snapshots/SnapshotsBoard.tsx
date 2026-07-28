@@ -433,7 +433,8 @@ export const SnapshotsBoard: React.FC = () => {
         const base64Data = await window.electronAPI.readSnapshot(selectedSnapshot.filename, selectedDate)
         if (active) {
           setImgData(base64Data)
-          setZoomLevel(1) // Reset zoom on image change
+          const savedZoom = activeCategory ? localStorage.getItem(`quantstation_snapshot_zoom_${activeCategory}`) : null
+          setZoomLevel(savedZoom ? parseFloat(savedZoom) : 1)
         }
       } catch (err) {
         console.error(`[SnapshotsBoard] Failed to read snapshot file ${selectedSnapshot.filename}:`, err)
@@ -834,7 +835,8 @@ export const SnapshotsBoard: React.FC = () => {
                   value={selectedDate}
                   onChange={(e) => {
                     setSelectedDate(e.target.value)
-                    setZoomLevel(1)
+                    const savedZoom = activeCategory ? localStorage.getItem(`quantstation_snapshot_zoom_${activeCategory}`) : null
+                    setZoomLevel(savedZoom ? parseFloat(savedZoom) : 1)
                     setAutoFollow(true)
                   }}
                   disabled={showWeek}
@@ -898,7 +900,8 @@ export const SnapshotsBoard: React.FC = () => {
                   checked={showWeek}
                   onChange={(e) => {
                     setShowWeek(e.target.checked)
-                    setZoomLevel(1)
+                    const savedZoom = activeCategory ? localStorage.getItem(`quantstation_snapshot_zoom_${activeCategory}`) : null
+                    setZoomLevel(savedZoom ? parseFloat(savedZoom) : 1)
                     setAutoFollow(true)
                   }}
                   style={{
@@ -1078,7 +1081,15 @@ export const SnapshotsBoard: React.FC = () => {
                     overflow: 'hidden',
                   }}>
                     <button
-                      onClick={() => setZoomLevel(prev => Math.max(0.5, prev - 0.2))}
+                      onClick={() => {
+                        setZoomLevel(prev => {
+                          const nextZoom = Math.max(0.5, prev - 0.2)
+                          if (activeCategory) {
+                            localStorage.setItem(`quantstation_snapshot_zoom_${activeCategory}`, String(nextZoom))
+                          }
+                          return nextZoom
+                        })
+                      }}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -1106,7 +1117,15 @@ export const SnapshotsBoard: React.FC = () => {
                       {Math.round(zoomLevel * 100)}%
                     </span>
                     <button
-                      onClick={() => setZoomLevel(prev => Math.min(3, prev + 0.2))}
+                      onClick={() => {
+                        setZoomLevel(prev => {
+                          const nextZoom = Math.min(3, prev + 0.2)
+                          if (activeCategory) {
+                            localStorage.setItem(`quantstation_snapshot_zoom_${activeCategory}`, String(nextZoom))
+                          }
+                          return nextZoom
+                        })
+                      }}
                       style={{
                         background: 'transparent',
                         border: 'none',
@@ -1137,6 +1156,9 @@ export const SnapshotsBoard: React.FC = () => {
                         onClick={() => {
                           setFitMode(mode)
                           setZoomLevel(1)
+                          if (activeCategory) {
+                            localStorage.setItem(`quantstation_snapshot_zoom_${activeCategory}`, '1')
+                          }
                         }}
                         style={{
                           background: fitMode === mode ? 'var(--qs-bg-hover)' : 'transparent',

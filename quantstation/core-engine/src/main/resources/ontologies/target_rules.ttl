@@ -1,0 +1,2567 @@
+@prefix :   <http://quant.example.org/ontology/strategy#> .
+@prefix sh:  <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# ─── Target Policy Individuals (Multi-Condition Tuned) ─────────────────
+
+:DailyMeanReversionPolicy a :TargetPolicy ;
+    :targetType       "DAILY_MEAN_REVERSION" ;
+    :stopLossZScore   1.5 ;
+    :takeProfitZScore 2.5 ;
+    :timeStopMinutes  1440 .
+
+:DailyMomentumBreakoutPolicy a :TargetPolicy ;
+    :targetType       "DAILY_MOMENTUM_BREAKOUT" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 3.0 ;
+    :timeStopMinutes  2880 .
+
+:DynamicGexPinningPolicy_15m a :TargetPolicy ;
+    :targetType       "DYNAMIC_GEX_PINNING" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  45 .
+
+:DynamicGexPinning_SPY_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   0.8 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  15 ;
+    :maxRsiThreshold   32.5 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_QQQ_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  15 .
+
+:DynamicGexPinning_IWM_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   1.8 ;
+    :takeProfitZScore 1.0 ;
+    :timeStopMinutes  90 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLK_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 2.2 ;
+    :timeStopMinutes  30 ;
+    :maxAdxThreshold   17.5 .
+
+:DynamicGexPinning_XLF_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 1.4 ;
+    :timeStopMinutes  15 ;
+    :maxRsiThreshold   40.0 .
+
+:DynamicGexPinning_XLV_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   1.8 ;
+    :takeProfitZScore 1.0 ;
+    :timeStopMinutes  90 .
+
+:DynamicGexPinning_XLY_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   1.1 ;
+    :takeProfitZScore 2.0 ;
+    :timeStopMinutes  15 .
+
+:DynamicGexPinning_XLP_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 2.3 ;
+    :timeStopMinutes  60 ;
+    :maxAdxThreshold   30.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLE_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 2.0 ;
+    :timeStopMinutes  120 ;
+    :maxRsiThreshold   30.0 .
+
+:DynamicGexPinning_XLI_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   0.8 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  90 .
+
+:DynamicGexPinning_XLB_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   1.1 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  45 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLU_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   2.3 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  120 ;
+    :maxRsiThreshold   40.0 ;
+    :maxAdxThreshold   27.5 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLRE_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   0.6 ;
+    :takeProfitZScore 1.4 ;
+    :timeStopMinutes  120 ;
+    :maxRsiThreshold   42.5 ;
+    :maxAdxThreshold   22.5 .
+
+:DynamicGexPinning_XLC_15m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  45 ;
+    :maxAdxThreshold   30.0 ;
+    :requireMacdBullish true .
+
+# ─── SHACL Classification Rules (Per-Symbol Multi-Condition Shapes) ────
+
+# ── Symbol Rule: SPY Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_SPY15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :SPY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_SPY_15m
+    ] .
+
+# ── Symbol Rule: QQQ Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_QQQ15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :QQQ ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_QQQ_15m
+    ] .
+
+# ── Symbol Rule: IWM Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_IWM15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :IWM ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_IWM_15m
+    ] .
+
+# ── Symbol Rule: XLK Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLK15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLK ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLK_15m
+    ] .
+
+# ── Symbol Rule: XLF Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLF15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLF ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLF_15m
+    ] .
+
+# ── Symbol Rule: XLV Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLV15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLV ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLV_15m
+    ] .
+
+# ── Symbol Rule: XLY Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLY15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLY_15m
+    ] .
+
+# ── Symbol Rule: XLP Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLP15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_15m
+    ] .
+
+# ── Consumer Staples Constituent Inheritance Rules (WMT, KO, KMB, TGT, PG, COST, PEP) ──
+:StrategyClassificationShape_WMT15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :WMT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_15m
+    ] .
+
+:StrategyClassificationShape_KO15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KO ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_15m
+    ] .
+
+:StrategyClassificationShape_KMB15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KMB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_15m
+    ] .
+
+:StrategyClassificationShape_TGT15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :TGT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_15m
+    ] .
+
+:StrategyClassificationShape_PG15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PG ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_15m
+    ] .
+
+:StrategyClassificationShape_COST15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :COST ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_15m
+    ] .
+
+:StrategyClassificationShape_PEP15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PEP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_15m
+    ] .
+
+# ── Symbol Rule: XLE Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLE15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLE_15m
+    ] .
+
+# ── Symbol Rule: XLI Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLI15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLI ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLI_15m
+    ] .
+
+# ── Symbol Rule: XLB Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLB15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLB_15m
+    ] .
+
+# ── Symbol Rule: XLU Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLU15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLU ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLU_15m
+    ] .
+
+# ── Symbol Rule: XLRE Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLRE15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLRE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLRE_15m
+    ] .
+
+# ── Symbol Rule: XLC Multi-Condition 15-Min ────────────────────────
+:StrategyClassificationShape_XLC15m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLC ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar15Min ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :HighVolatilityRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLC_15m
+    ] .
+
+# ── Daily Rules ────────────────────────────────────────────────────────
+:StrategyClassificationShape_DailyMeanReversion a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Day ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :MeanReversionRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DailyMeanReversionPolicy
+    ] .
+
+:StrategyClassificationShape_DailyMomentum a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Day ] ;
+            sh:property [ sh:path :activeInRegime ;      sh:hasValue :TrendingRegime ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DailyMomentumBreakoutPolicy
+    ] .
+
+# ─── 5-Minute Intraday Target Policies & Rules ────────────────────────
+
+:DynamicGexPinning_SPY_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 2.6 ;
+    :timeStopMinutes  5 ;
+    :maxRsiThreshold   30.0 .
+
+:DynamicGexPinning_QQQ_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  15 ;
+    :requireMacdBullish true .
+
+:DynamicGexPinning_IWM_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   1.8 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  60 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLK_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.8 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  10 ;
+    :maxRsiThreshold   37.5 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLF_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  10 ;
+    :maxRsiThreshold   40.0 .
+
+:DynamicGexPinning_XLV_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 1.6 ;
+    :timeStopMinutes  5 ;
+    :maxAdxThreshold   35.0 .
+
+:DynamicGexPinning_XLY_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   1.1 ;
+    :takeProfitZScore 1.9 ;
+    :timeStopMinutes  30 ;
+    :maxAdxThreshold   15.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLP_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   2.0 ;
+    :takeProfitZScore 1.8 ;
+    :timeStopMinutes  5 ;
+    :maxRsiThreshold   40.0 ;
+    :requireMacdBullish true .
+
+:DynamicGexPinning_XLE_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  30 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLI_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   1.1 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  15 ;
+    :maxRsiThreshold   45.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLB_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   2.1 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  60 ;
+    :maxRsiThreshold   35.0 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLU_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 1.8 ;
+    :timeStopMinutes  60 ;
+    :requireMacdBullish true .
+
+:DynamicGexPinning_XLRE_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  15 .
+
+:DynamicGexPinning_XLC_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   1.3 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  10 ;
+    :maxAdxThreshold   15.0 .
+
+:DynamicGexPinning_WMT_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   2.3 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  15 ;
+    :maxRsiThreshold   45.0 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_KO_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   1.9 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  10 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_KMB_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 1.8 ;
+    :timeStopMinutes  45 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_TGT_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 1.6 ;
+    :timeStopMinutes  60 ;
+    :maxRsiThreshold   40.0 .
+
+:DynamicGexPinning_PG_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  60 ;
+    :maxRsiThreshold   40.0 ;
+    :requireMacdBullish true .
+
+:DynamicGexPinning_COST_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   1.4 ;
+    :takeProfitZScore 1.9 ;
+    :timeStopMinutes  60 ;
+    :maxRsiThreshold   35.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_PEP_5m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_5M" ;
+    :stopLossZScore   1.8 ;
+    :takeProfitZScore 1.4 ;
+    :timeStopMinutes  30 ;
+    :maxAdxThreshold   22.5 ;
+    :useHmmFilter      true .
+
+:StrategyClassificationShape_SPY5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :SPY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_SPY_5m
+    ] .
+
+:StrategyClassificationShape_QQQ5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :QQQ ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_QQQ_5m
+    ] .
+
+:StrategyClassificationShape_IWM5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :IWM ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_IWM_5m
+    ] .
+
+:StrategyClassificationShape_XLK5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLK ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLK_5m
+    ] .
+
+:StrategyClassificationShape_XLF5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLF ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLF_5m
+    ] .
+
+:StrategyClassificationShape_XLV5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLV ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLV_5m
+    ] .
+
+:StrategyClassificationShape_XLY5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLY_5m
+    ] .
+
+:StrategyClassificationShape_XLP5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_5m
+    ] .
+
+:StrategyClassificationShape_XLE5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLE_5m
+    ] .
+
+:StrategyClassificationShape_XLI5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLI ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLI_5m
+    ] .
+
+:StrategyClassificationShape_XLB5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLB_5m
+    ] .
+
+:StrategyClassificationShape_XLU5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLU ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLU_5m
+    ] .
+
+:StrategyClassificationShape_XLRE5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLRE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLRE_5m
+    ] .
+
+:StrategyClassificationShape_XLC5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLC ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLC_5m
+    ] .
+
+:StrategyClassificationShape_WMT5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :WMT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_WMT_5m
+    ] .
+
+:StrategyClassificationShape_KO5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KO ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KO_5m
+    ] .
+
+:StrategyClassificationShape_KMB5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KMB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KMB_5m
+    ] .
+
+:StrategyClassificationShape_TGT5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :TGT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_TGT_5m
+    ] .
+
+:StrategyClassificationShape_PG5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PG ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PG_5m
+    ] .
+
+:StrategyClassificationShape_COST5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :COST ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_COST_5m
+    ] .
+
+:StrategyClassificationShape_PEP5m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PEP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar5Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PEP_5m
+    ] .
+
+# ─── 1-Hour Intraday Target Policies & Rules ────────────────────────
+
+:DynamicGexPinning_SPY_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 1.3 ;
+    :timeStopMinutes  120 .
+
+:DynamicGexPinning_QQQ_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   1.2 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  120 ;
+    :maxRsiThreshold   35.0 .
+
+:DynamicGexPinning_IWM_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   1.1 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  720 .
+
+:DynamicGexPinning_XLK_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 1.3 ;
+    :timeStopMinutes  240 .
+
+:DynamicGexPinning_XLF_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   1.5 ;
+    :takeProfitZScore 0.9 ;
+    :timeStopMinutes  480 .
+
+:DynamicGexPinning_XLV_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   1.6 ;
+    :takeProfitZScore 1.3 ;
+    :timeStopMinutes  240 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLY_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.8 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  720 .
+
+:DynamicGexPinning_XLP_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.6 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  60 ;
+    :maxAdxThreshold   35.0 .
+
+:DynamicGexPinning_XLE_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  240 .
+
+:DynamicGexPinning_XLI_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.6 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  120 ;
+    :maxRsiThreshold   37.5 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLB_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 1.6 ;
+    :timeStopMinutes  720 ;
+    :maxRsiThreshold   30.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLU_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   1.5 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  360 ;
+    :maxAdxThreshold   30.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLRE_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  120 .
+
+:DynamicGexPinning_XLC_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.8 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  360 ;
+    :maxRsiThreshold   42.5 ;
+    :maxAdxThreshold   25.0 .
+
+:DynamicGexPinning_WMT_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.8 ;
+    :takeProfitZScore 1.0 ;
+    :timeStopMinutes  480 ;
+    :maxRsiThreshold   30.0 .
+
+:DynamicGexPinning_KO_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.6 ;
+    :takeProfitZScore 2.1 ;
+    :timeStopMinutes  360 ;
+    :maxRsiThreshold   35.0 .
+
+:DynamicGexPinning_KMB_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.8 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  480 .
+
+:DynamicGexPinning_TGT_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   1.3 ;
+    :takeProfitZScore 1.7 ;
+    :timeStopMinutes  720 .
+
+:DynamicGexPinning_PG_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 1.3 ;
+    :timeStopMinutes  720 ;
+    :maxRsiThreshold   40.0 .
+
+:DynamicGexPinning_COST_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 1.0 ;
+    :timeStopMinutes  120 ;
+    :maxRsiThreshold   32.5 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_PEP_1h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_1H" ;
+    :stopLossZScore   1.7 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  360 ;
+    :requireMacdBullish true .
+
+:StrategyClassificationShape_SPY1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :SPY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_SPY_1h
+    ] .
+
+:StrategyClassificationShape_QQQ1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :QQQ ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_QQQ_1h
+    ] .
+
+:StrategyClassificationShape_IWM1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :IWM ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_IWM_1h
+    ] .
+
+:StrategyClassificationShape_XLK1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLK ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLK_1h
+    ] .
+
+:StrategyClassificationShape_XLF1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLF ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLF_1h
+    ] .
+
+:StrategyClassificationShape_XLV1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLV ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLV_1h
+    ] .
+
+:StrategyClassificationShape_XLY1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLY_1h
+    ] .
+
+:StrategyClassificationShape_XLP1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_1h
+    ] .
+
+:StrategyClassificationShape_XLE1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLE_1h
+    ] .
+
+:StrategyClassificationShape_XLI1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLI ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLI_1h
+    ] .
+
+:StrategyClassificationShape_XLB1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLB_1h
+    ] .
+
+:StrategyClassificationShape_XLU1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLU ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLU_1h
+    ] .
+
+:StrategyClassificationShape_XLRE1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLRE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLRE_1h
+    ] .
+
+:StrategyClassificationShape_XLC1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLC ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLC_1h
+    ] .
+
+:StrategyClassificationShape_WMT1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :WMT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_WMT_1h
+    ] .
+
+:StrategyClassificationShape_KO1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KO ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KO_1h
+    ] .
+
+:StrategyClassificationShape_KMB1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KMB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KMB_1h
+    ] .
+
+:StrategyClassificationShape_TGT1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :TGT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_TGT_1h
+    ] .
+
+:StrategyClassificationShape_PG1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PG ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PG_1h
+    ] .
+
+:StrategyClassificationShape_COST1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :COST ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_COST_1h
+    ] .
+
+:StrategyClassificationShape_PEP1h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PEP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar1Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PEP_1h
+    ] .
+
+# ─── 4-Hour Intraday Target Policies & Rules ────────────────────────
+
+:DynamicGexPinning_SPY_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  960 ;
+    :maxAdxThreshold   25.0 .
+
+:DynamicGexPinning_QQQ_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.0 ;
+    :timeStopMinutes  1440 ;
+    :maxAdxThreshold   35.0 .
+
+:DynamicGexPinning_IWM_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_XLK_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_XLF_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_XLV_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  4320 .
+
+:DynamicGexPinning_XLY_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.2 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  2880 .
+
+:DynamicGexPinning_XLP_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  2880 ;
+    :maxRsiThreshold   42.5 .
+
+:DynamicGexPinning_XLE_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   2.0 ;
+    :takeProfitZScore 0.9 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_XLI_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_XLB_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   0.8 ;
+    :takeProfitZScore 1.0 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_XLU_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_XLRE_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_XLC_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 1.7 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_WMT_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 1.4 ;
+    :timeStopMinutes  240 .
+
+:DynamicGexPinning_KO_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_KMB_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.4 ;
+    :takeProfitZScore 0.9 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_TGT_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   0.8 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  960 ;
+    :maxRsiThreshold   45.0 .
+
+:DynamicGexPinning_PG_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_COST_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  1440 .
+
+:DynamicGexPinning_PEP_4h a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_4H" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 1.0 ;
+    :timeStopMinutes  1440 ;
+    :maxRsiThreshold   37.5 .
+
+:StrategyClassificationShape_SPY4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :SPY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_SPY_4h
+    ] .
+
+:StrategyClassificationShape_QQQ4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :QQQ ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_QQQ_4h
+    ] .
+
+:StrategyClassificationShape_IWM4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :IWM ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_IWM_4h
+    ] .
+
+:StrategyClassificationShape_XLK4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLK ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLK_4h
+    ] .
+
+:StrategyClassificationShape_XLF4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLF ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLF_4h
+    ] .
+
+:StrategyClassificationShape_XLV4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLV ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLV_4h
+    ] .
+
+:StrategyClassificationShape_XLY4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLY_4h
+    ] .
+
+:StrategyClassificationShape_XLP4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_4h
+    ] .
+
+:StrategyClassificationShape_XLE4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLE_4h
+    ] .
+
+:StrategyClassificationShape_XLI4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLI ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLI_4h
+    ] .
+
+:StrategyClassificationShape_XLB4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLB_4h
+    ] .
+
+:StrategyClassificationShape_XLU4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLU ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLU_4h
+    ] .
+
+:StrategyClassificationShape_XLRE4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLRE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLRE_4h
+    ] .
+
+:StrategyClassificationShape_XLC4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLC ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLC_4h
+    ] .
+
+:StrategyClassificationShape_WMT4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :WMT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_WMT_4h
+    ] .
+
+:StrategyClassificationShape_KO4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KO ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KO_4h
+    ] .
+
+:StrategyClassificationShape_KMB4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KMB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KMB_4h
+    ] .
+
+:StrategyClassificationShape_TGT4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :TGT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_TGT_4h
+    ] .
+
+:StrategyClassificationShape_PG4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PG ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PG_4h
+    ] .
+
+:StrategyClassificationShape_COST4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :COST ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_COST_4h
+    ] .
+
+:StrategyClassificationShape_PEP4h a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PEP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar4Hour ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PEP_4h
+    ] .
+
+# ─── 2-Minute Intraday Target Policies & Rules ────────────────────────
+
+:DynamicGexPinning_SPY_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.2 ;
+    :takeProfitZScore 1.7 ;
+    :timeStopMinutes  15 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_QQQ_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.3 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  2 ;
+    :maxRsiThreshold   45.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_IWM_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.3 ;
+    :takeProfitZScore 1.7 ;
+    :timeStopMinutes  6 ;
+    :maxRsiThreshold   40.0 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLK_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.1 ;
+    :takeProfitZScore 1.4 ;
+    :timeStopMinutes  10 ;
+    :maxAdxThreshold   17.5 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLF_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   2.1 ;
+    :takeProfitZScore 1.3 ;
+    :timeStopMinutes  6 ;
+    :maxRsiThreshold   37.5 ;
+    :maxAdxThreshold   30.0 .
+
+:DynamicGexPinning_XLV_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.6 ;
+    :takeProfitZScore 1.0 ;
+    :timeStopMinutes  30 ;
+    :maxRsiThreshold   45.0 ;
+    :maxAdxThreshold   20.0 .
+
+:DynamicGexPinning_XLY_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.2 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  45 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLP_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 2.8 ;
+    :timeStopMinutes  15 ;
+    :maxRsiThreshold   45.0 ;
+    :maxAdxThreshold   35.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLE_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.4 ;
+    :takeProfitZScore 1.9 ;
+    :timeStopMinutes  30 ;
+    :maxRsiThreshold   45.0 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLI_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.4 ;
+    :takeProfitZScore 1.6 ;
+    :timeStopMinutes  2 ;
+    :maxAdxThreshold   32.5 ;
+    :requireMacdBullish true .
+
+:DynamicGexPinning_XLB_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   2.3 ;
+    :takeProfitZScore 0.9 ;
+    :timeStopMinutes  4 ;
+    :maxRsiThreshold   27.5 ;
+    :requireMacdBullish true .
+
+:DynamicGexPinning_XLU_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.7 ;
+    :takeProfitZScore 1.3 ;
+    :timeStopMinutes  15 ;
+    :maxRsiThreshold   40.0 ;
+    :maxAdxThreshold   20.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLRE_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 1.4 ;
+    :timeStopMinutes  4 .
+
+:DynamicGexPinning_XLC_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.5 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  6 ;
+    :maxAdxThreshold   15.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_WMT_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  10 .
+
+:DynamicGexPinning_KO_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.6 ;
+    :takeProfitZScore 1.3 ;
+    :timeStopMinutes  6 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_KMB_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.4 ;
+    :takeProfitZScore 2.4 ;
+    :timeStopMinutes  2 ;
+    :maxRsiThreshold   25.0 .
+
+:DynamicGexPinning_TGT_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.3 ;
+    :takeProfitZScore 1.4 ;
+    :timeStopMinutes  45 ;
+    :maxRsiThreshold   32.5 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_PG_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   2.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  4 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_COST_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  45 ;
+    :maxAdxThreshold   35.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_PEP_2m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_2M" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  45 ;
+    :maxAdxThreshold   27.5 .
+
+:StrategyClassificationShape_SPY2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :SPY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_SPY_2m
+    ] .
+
+:StrategyClassificationShape_QQQ2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :QQQ ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_QQQ_2m
+    ] .
+
+:StrategyClassificationShape_IWM2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :IWM ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_IWM_2m
+    ] .
+
+:StrategyClassificationShape_XLK2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLK ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLK_2m
+    ] .
+
+:StrategyClassificationShape_XLF2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLF ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLF_2m
+    ] .
+
+:StrategyClassificationShape_XLV2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLV ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLV_2m
+    ] .
+
+:StrategyClassificationShape_XLY2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLY_2m
+    ] .
+
+:StrategyClassificationShape_XLP2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_2m
+    ] .
+
+:StrategyClassificationShape_XLE2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLE_2m
+    ] .
+
+:StrategyClassificationShape_XLI2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLI ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLI_2m
+    ] .
+
+:StrategyClassificationShape_XLB2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLB_2m
+    ] .
+
+:StrategyClassificationShape_XLU2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLU ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLU_2m
+    ] .
+
+:StrategyClassificationShape_XLRE2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLRE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLRE_2m
+    ] .
+
+:StrategyClassificationShape_XLC2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLC ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLC_2m
+    ] .
+
+:StrategyClassificationShape_WMT2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :WMT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_WMT_2m
+    ] .
+
+:StrategyClassificationShape_KO2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KO ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KO_2m
+    ] .
+
+:StrategyClassificationShape_KMB2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KMB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KMB_2m
+    ] .
+
+:StrategyClassificationShape_TGT2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :TGT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_TGT_2m
+    ] .
+
+:StrategyClassificationShape_PG2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PG ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PG_2m
+    ] .
+
+:StrategyClassificationShape_COST2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :COST ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_COST_2m
+    ] .
+
+:StrategyClassificationShape_PEP2m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PEP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar2Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PEP_2m
+    ] .
+
+# ─── 30-Minute Intraday Target Policies & Rules ────────────────────────
+
+:DynamicGexPinning_SPY_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  240 ;
+    :maxRsiThreshold   45.0 ;
+    :maxAdxThreshold   22.5 .
+
+:DynamicGexPinning_QQQ_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   0.7 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  120 ;
+    :maxRsiThreshold   37.5 .
+
+:DynamicGexPinning_IWM_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  120 .
+
+:DynamicGexPinning_XLK_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.3 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  30 ;
+    :maxRsiThreshold   30.0 .
+
+:DynamicGexPinning_XLF_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  120 .
+
+:DynamicGexPinning_XLV_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.5 ;
+    :takeProfitZScore 1.4 ;
+    :timeStopMinutes  30 .
+
+:DynamicGexPinning_XLY_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   0.6 ;
+    :takeProfitZScore 1.7 ;
+    :timeStopMinutes  60 ;
+    :maxRsiThreshold   25.0 .
+
+:DynamicGexPinning_XLP_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.1 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  120 .
+
+:DynamicGexPinning_XLE_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  60 ;
+    :requireMacdBullish true .
+
+:DynamicGexPinning_XLI_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.1 ;
+    :takeProfitZScore 1.7 ;
+    :timeStopMinutes  30 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLB_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.0 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  120 .
+
+:DynamicGexPinning_XLU_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 0.8 ;
+    :timeStopMinutes  90 .
+
+:DynamicGexPinning_XLRE_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.4 ;
+    :takeProfitZScore 1.3 ;
+    :timeStopMinutes  30 ;
+    :maxAdxThreshold   35.0 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_XLC_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.4 ;
+    :takeProfitZScore 0.9 ;
+    :timeStopMinutes  60 .
+
+:DynamicGexPinning_WMT_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   0.6 ;
+    :takeProfitZScore 1.4 ;
+    :timeStopMinutes  30 .
+
+:DynamicGexPinning_KO_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.2 ;
+    :takeProfitZScore 0.9 ;
+    :timeStopMinutes  90 ;
+    :maxAdxThreshold   27.5 ;
+    :useHmmFilter      true .
+
+:DynamicGexPinning_KMB_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   0.9 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  120 .
+
+:DynamicGexPinning_TGT_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   0.5 ;
+    :takeProfitZScore 1.5 ;
+    :timeStopMinutes  120 .
+
+:DynamicGexPinning_PG_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.1 ;
+    :takeProfitZScore 1.1 ;
+    :timeStopMinutes  30 .
+
+:DynamicGexPinning_COST_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   1.5 ;
+    :takeProfitZScore 1.2 ;
+    :timeStopMinutes  60 .
+
+:DynamicGexPinning_PEP_30m a :TargetPolicy ;
+    :targetType       "MULTI_CONDITION_GEX_30M" ;
+    :stopLossZScore   0.6 ;
+    :takeProfitZScore 0.9 ;
+    :timeStopMinutes  180 ;
+    :requireMacdBullish true ;
+    :useHmmFilter      true .
+
+:StrategyClassificationShape_SPY30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :SPY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_SPY_30m
+    ] .
+
+:StrategyClassificationShape_QQQ30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :QQQ ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_QQQ_30m
+    ] .
+
+:StrategyClassificationShape_IWM30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :IWM ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_IWM_30m
+    ] .
+
+:StrategyClassificationShape_XLK30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLK ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLK_30m
+    ] .
+
+:StrategyClassificationShape_XLF30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLF ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLF_30m
+    ] .
+
+:StrategyClassificationShape_XLV30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLV ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLV_30m
+    ] .
+
+:StrategyClassificationShape_XLY30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLY ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLY_30m
+    ] .
+
+:StrategyClassificationShape_XLP30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLP_30m
+    ] .
+
+:StrategyClassificationShape_XLE30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLE_30m
+    ] .
+
+:StrategyClassificationShape_XLI30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLI ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLI_30m
+    ] .
+
+:StrategyClassificationShape_XLB30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLB_30m
+    ] .
+
+:StrategyClassificationShape_XLU30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLU ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLU_30m
+    ] .
+
+:StrategyClassificationShape_XLRE30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLRE ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLRE_30m
+    ] .
+
+:StrategyClassificationShape_XLC30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :XLC ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_XLC_30m
+    ] .
+
+:StrategyClassificationShape_WMT30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :WMT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_WMT_30m
+    ] .
+
+:StrategyClassificationShape_KO30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KO ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KO_30m
+    ] .
+
+:StrategyClassificationShape_KMB30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :KMB ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_KMB_30m
+    ] .
+
+:StrategyClassificationShape_TGT30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :TGT ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_TGT_30m
+    ] .
+
+:StrategyClassificationShape_PG30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PG ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PG_30m
+    ] .
+
+:StrategyClassificationShape_COST30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :COST ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_COST_30m
+    ] .
+
+:StrategyClassificationShape_PEP30m a sh:NodeShape ;
+    sh:targetClass :Strategy ;
+    sh:rule [
+        a sh:TripleRule ;
+        sh:condition [
+            sh:property [ sh:path :tradesInstrument ;    sh:hasValue :PEP ] ;
+            sh:property [ sh:path :operatesOnTimeframe ; sh:hasValue :Bar30Min ] ;
+        ] ;
+        sh:subject   sh:this ;
+        sh:predicate :hasTargetPolicy ;
+        sh:object    :DynamicGexPinning_PEP_30m
+    ] .

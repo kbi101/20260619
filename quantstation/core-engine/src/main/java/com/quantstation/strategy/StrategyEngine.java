@@ -25,8 +25,13 @@ public class StrategyEngine {
     private final OrderManagementSystem oms;
     private final List<Strategy> strategies = new CopyOnWriteArrayList<>();
 
-    public StrategyEngine(OrderManagementSystem oms) {
+    public StrategyEngine(OrderManagementSystem oms, List<Strategy> initialStrategies) {
         this.oms = oms;
+        if (initialStrategies != null) {
+            for (Strategy s : initialStrategies) {
+                registerStrategy(s);
+            }
+        }
     }
 
     /**
@@ -69,6 +74,26 @@ public class StrategyEngine {
                 }
             } catch (Exception e) {
                 log.error("StrategyEngine: Error in strategy '{}' onTick",
+                        strategy.getName(), e);
+            }
+        }
+    }
+
+    /**
+     * Dispatch a completed bar to all active strategies interested in this symbol.
+     */
+    public void onBar(com.quantstation.domain.BarData bar) {
+        for (Strategy strategy : strategies) {
+            if (!strategy.isActive()) continue;
+            if (!strategy.getSubscribedSymbols().contains(bar.symbol())) continue;
+
+            try {
+                Signal signal = strategy.onBar(bar);
+                if (signal != null) {
+                    handleSignal(signal);
+                }
+            } catch (Exception e) {
+                log.error("StrategyEngine: Error in strategy '{}' onBar",
                         strategy.getName(), e);
             }
         }

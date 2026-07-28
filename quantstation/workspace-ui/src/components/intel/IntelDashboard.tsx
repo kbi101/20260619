@@ -2,6 +2,7 @@ import React from 'react'
 import { useMarketStream } from '../../hooks/useMarketStream'
 import { WatchlistPanel } from './WatchlistPanel'
 import { DailyChecklist } from './DailyChecklist'
+import { MultiResolutionMatrixWidget } from './MultiResolutionMatrixWidget'
 
 /**
  * IntelDashboard — Secondary Window Layout
@@ -66,17 +67,24 @@ export const IntelDashboard: React.FC = () => {
         boxSizing: 'border-box',
         overflow: 'hidden',
       }}>
-        {/* Watchlist Panel */}
-        <div className="panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div className="panel__header">
-            <span className="panel__title">❶ Watchlist</span>
+        {/* Left Column: Watchlist & Multi-Resolution Consensus Matrix */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflow: 'hidden' }}>
+          <div className="panel" style={{ display: 'flex', flexDirection: 'column', height: '45%', overflow: 'hidden' }}>
+            <div className="panel__header">
+              <span className="panel__title">❶ Watchlist</span>
+            </div>
+            <div className="panel__content" style={{ padding: 0, overflow: 'hidden' }}>
+              <WatchlistPanel />
+            </div>
           </div>
-          <div className="panel__content" style={{ padding: 0, overflow: 'hidden' }}>
-            <WatchlistPanel />
+          <div className="panel" style={{ display: 'flex', flexDirection: 'column', height: '55%', overflow: 'hidden' }}>
+            <div className="panel__content" style={{ padding: 0, overflow: 'hidden', height: '100%' }}>
+              <MultiResolutionMatrixWidget />
+            </div>
           </div>
         </div>
 
-        {/* Daily Checklist & Targets */}
+        {/* Right Column: Daily Checklist & Targets */}
         <div className="panel" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div className="panel__header">
             <span className="panel__title">❷ Daily Targets & Checklist</span>
