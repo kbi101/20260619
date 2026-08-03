@@ -374,7 +374,7 @@ Three Spring profiles:
 
 | File | Responsibility |
 |:-----|:---------------|
-| [`electron/main.ts`](../../quantstation/workspace-ui/electron/main.ts) | Window management: 1920×1080, `hiddenInset` title bar, macOS traffic lights, Vite dev server support |
+| [`electron/main.ts`](../../quantstation/workspace-ui/electron/main.ts) | Window management (Workspace, Intel Dashboard, Snapshots Board), `hiddenInset` title bar, macOS View menu checkable window toggles (`Cmd+1`, `Cmd+2`, `Cmd+3`), and window state persistence (`userData/window-state.json`) |
 | [`electron/preload.ts`](../../quantstation/workspace-ui/electron/preload.ts) | Secure `contextBridge` API: platform info, window controls (`minimize`, `maximize`, `close`) |
 
 ### 4.3 Design System

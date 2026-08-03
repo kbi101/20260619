@@ -11,6 +11,52 @@ app.disableHardwareAcceleration()
 let mainWindow: BrowserWindow | null = null
 let intelWindow: BrowserWindow | null = null
 let snapshotsWindow: BrowserWindow | null = null
+let isQuitting = false
+
+interface WindowState {
+  workspace: boolean
+  intel: boolean
+  snapshots: boolean
+}
+
+let currentWindowState: WindowState = { workspace: true, intel: true, snapshots: false }
+
+const getWindowStatePath = (): string => {
+  return path.join(app.getPath('userData'), 'window-state.json')
+}
+
+function loadWindowState(): WindowState {
+  const defaultState: WindowState = { workspace: true, intel: true, snapshots: false }
+  try {
+    const statePath = getWindowStatePath()
+    if (fs.existsSync(statePath)) {
+      const data = fs.readFileSync(statePath, 'utf8')
+      const parsed = JSON.parse(data)
+      return {
+        workspace: typeof parsed.workspace === 'boolean' ? parsed.workspace : defaultState.workspace,
+        intel: typeof parsed.intel === 'boolean' ? parsed.intel : defaultState.intel,
+        snapshots: typeof parsed.snapshots === 'boolean' ? parsed.snapshots : defaultState.snapshots,
+      }
+    }
+  } catch (err) {
+    console.error('[WindowState] Error loading window state:', err)
+  }
+  return defaultState
+}
+
+function isWindowVisible(win: BrowserWindow | null): boolean {
+  return !!(win && !win.isDestroyed() && win.isVisible())
+}
+
+function saveWindowState(): void {
+  try {
+    const statePath = getWindowStatePath()
+    fs.writeFileSync(statePath, JSON.stringify(currentWindowState, null, 2), 'utf8')
+    console.log('[WindowState] Saved window state:', currentWindowState)
+  } catch (err) {
+    console.error('[WindowState] Error saving window state:', err)
+  }
+}
 
 // Snapshot Directory & Watcher State
 let fileWatcher: fs.FSWatcher | null = null
@@ -209,6 +255,23 @@ function createWindow(): void {
 
   mainWindow.on('closed', () => {
     mainWindow = null
+    if (!isQuitting) {
+      currentWindowState.workspace = false
+      saveWindowState()
+    }
+    createApplicationMenu()
+  })
+  mainWindow.on('show', () => {
+    currentWindowState.workspace = true
+    saveWindowState()
+    createApplicationMenu()
+  })
+  mainWindow.on('hide', () => {
+    if (!isQuitting) {
+      currentWindowState.workspace = false
+      saveWindowState()
+    }
+    createApplicationMenu()
   })
 }
 
@@ -248,6 +311,23 @@ function createIntelWindow(): void {
 
   intelWindow.on('closed', () => {
     intelWindow = null
+    if (!isQuitting) {
+      currentWindowState.intel = false
+      saveWindowState()
+    }
+    createApplicationMenu()
+  })
+  intelWindow.on('show', () => {
+    currentWindowState.intel = true
+    saveWindowState()
+    createApplicationMenu()
+  })
+  intelWindow.on('hide', () => {
+    if (!isQuitting) {
+      currentWindowState.intel = false
+      saveWindowState()
+    }
+    createApplicationMenu()
   })
 }
 
@@ -288,35 +368,90 @@ function createSnapshotsWindow(show = true): void {
 
   snapshotsWindow.on('closed', () => {
     snapshotsWindow = null
+    if (!isQuitting) {
+      currentWindowState.snapshots = false
+      saveWindowState()
+    }
+    createApplicationMenu()
+  })
+  snapshotsWindow.on('show', () => {
+    currentWindowState.snapshots = true
+    saveWindowState()
+    createApplicationMenu()
+  })
+  snapshotsWindow.on('hide', () => {
+    if (!isQuitting) {
+      currentWindowState.snapshots = false
+      saveWindowState()
+    }
+    createApplicationMenu()
   })
 }
 
 // Window opener helpers
 function showWorkspaceWindow(): void {
+  currentWindowState.workspace = true
+  saveWindowState()
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.show()
     mainWindow.focus()
   } else {
     createWindow()
   }
+  createApplicationMenu()
 }
 
-// Fixed spelling 'Dashboard' to match specification
 function showIntelWindow(): void {
+  currentWindowState.intel = true
+  saveWindowState()
   if (intelWindow && !intelWindow.isDestroyed()) {
     intelWindow.show()
     intelWindow.focus()
   } else {
     createIntelWindow()
   }
+  createApplicationMenu()
 }
 
 function showSnapshotsWindow(): void {
+  currentWindowState.snapshots = true
+  saveWindowState()
   if (snapshotsWindow && !snapshotsWindow.isDestroyed()) {
     snapshotsWindow.show()
     snapshotsWindow.focus()
   } else {
     createSnapshotsWindow(true)
+  }
+  createApplicationMenu()
+}
+
+function toggleWorkspaceWindow(): void {
+  if (isWindowVisible(mainWindow)) {
+    currentWindowState.workspace = false
+    saveWindowState()
+    mainWindow?.close()
+  } else {
+    showWorkspaceWindow()
+  }
+}
+
+function toggleIntelWindow(): void {
+  if (isWindowVisible(intelWindow)) {
+    currentWindowState.intel = false
+    saveWindowState()
+    intelWindow?.close()
+  } else {
+    showIntelWindow()
+  }
+}
+
+function toggleSnapshotsWindow(): void {
+  if (isWindowVisible(snapshotsWindow)) {
+    currentWindowState.snapshots = false
+    saveWindowState()
+    snapshotsWindow?.close()
+  } else {
+    showSnapshotsWindow()
   }
 }
 
@@ -531,19 +666,25 @@ function createApplicationMenu(): void {
       label: 'View',
       submenu: [
         {
-          label: 'Show Workspace',
+          label: 'Workspace',
+          type: 'checkbox',
+          checked: isWindowVisible(mainWindow),
           accelerator: 'CmdOrCtrl+1',
-          click: () => showWorkspaceWindow()
+          click: () => toggleWorkspaceWindow()
         },
         {
-          label: 'Show Intel Dashboard',
+          label: 'Intel Dashboard',
+          type: 'checkbox',
+          checked: isWindowVisible(intelWindow),
           accelerator: 'CmdOrCtrl+2',
-          click: () => showIntelWindow()
+          click: () => toggleIntelWindow()
         },
         {
-          label: 'Show Snapshots Board',
+          label: 'Snapshots Board',
+          type: 'checkbox',
+          checked: isWindowVisible(snapshotsWindow),
           accelerator: 'CmdOrCtrl+3',
-          click: () => showSnapshotsWindow()
+          click: () => toggleSnapshotsWindow()
         },
         { type: 'separator' },
         { role: 'reload' },
@@ -566,20 +707,32 @@ function createApplicationMenu(): void {
   Menu.setApplicationMenu(menu)
 }
 
+app.on('before-quit', () => {
+  isQuitting = true
+})
+
 app.whenReady().then(() => {
+  currentWindowState = loadWindowState()
+
+  if (currentWindowState.workspace) createWindow()
+  if (currentWindowState.intel) createIntelWindow()
+  if (currentWindowState.snapshots) createSnapshotsWindow(true)
+  else createSnapshotsWindow(false)
+
   createApplicationMenu()
-  createWindow()
-  createIntelWindow()
-  createSnapshotsWindow(false)
   startWatchingSnapshots()
 })
 
 app.on('window-all-closed', () => {
-  app.quit()
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
 })
 
 app.on('activate', () => {
-  if (mainWindow === null) createWindow()
-  if (intelWindow === null) createIntelWindow()
-  if (snapshotsWindow === null) createSnapshotsWindow(false)
+  if (mainWindow === null && intelWindow === null && snapshotsWindow === null) {
+    createWindow()
+    createApplicationMenu()
+    saveWindowState()
+  }
 })
