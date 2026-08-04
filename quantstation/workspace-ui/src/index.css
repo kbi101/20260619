@@ -87,7 +87,19 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  user-select: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Text selection highlight styling */
+::selection {
+  background: hsla(215, 80%, 56%, 0.35);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background: hsla(215, 80%, 56%, 0.35);
+  color: #ffffff;
 }
 
 /* ── Custom Title Bar ──────────────────────────────── */
@@ -1603,6 +1615,13 @@ body {
   flex-direction: column;
   overflow: hidden;
   background: var(--qs-bg-primary);
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.pf-cockpit * {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* ── Title Bar KPIs ────────────────────────────────── */
