@@ -79,7 +79,17 @@ interface QuantStationState {
 
   detailPanelOpen: boolean
   toggleDetailPanel: () => void
+
+  // ── Multi-Brokerage Portfolio State ─────────────────
+  selectedAccountId: string
+  setSelectedAccountId: (accountId: string) => void
+  liveAccountSummary: AccountSummaryData | null
+  updateLiveAccountSummary: (summary: AccountSummaryData) => void
+  availableAccounts: BrokerageAccountInfo[]
+  setAvailableAccounts: (accounts: BrokerageAccountInfo[]) => void
 }
+
+import type { AccountSummaryData, BrokerageAccountInfo } from '../components/portfolio/types'
 
 const LOCAL_STORAGE_KEY = 'quantstation:watchlist'
 
@@ -409,6 +419,17 @@ export const useStore = create<QuantStationState>((set) => ({
 
   detailPanelOpen: true,
   toggleDetailPanel: () => set((state) => ({ detailPanelOpen: !state.detailPanelOpen })),
+
+  // Multi-Brokerage Portfolio State
+  selectedAccountId: 'ALL',
+  setSelectedAccountId: (accountId) => set({ selectedAccountId: accountId }),
+  liveAccountSummary: null,
+  updateLiveAccountSummary: (summary) => set({ liveAccountSummary: summary }),
+  availableAccounts: [
+    { accountId: 'ALL', provider: 'MOCK', accountName: 'All Accounts (Aggregated)', currency: 'USD', connected: true },
+    { accountId: 'DU123456', provider: 'IBKR', accountName: 'IBKR Paper Account', currency: 'USD', connected: false },
+  ],
+  setAvailableAccounts: (accounts) => set({ availableAccounts: accounts }),
 }))
 
 if (typeof window !== 'undefined') {

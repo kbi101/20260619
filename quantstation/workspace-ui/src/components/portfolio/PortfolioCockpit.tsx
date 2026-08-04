@@ -1,5 +1,6 @@
 import React, { useRef } from 'react'
 import { useMarketStream } from '../../hooks/useMarketStream'
+import { useStore } from '../../store/useStore'
 import { usePortfolioData } from './usePortfolioData'
 import { AccountSummary } from './AccountSummary'
 import { PositionGrid } from './PositionGrid'
@@ -14,6 +15,7 @@ import { OpenOrders } from './OpenOrders'
 import { AlertsFeed } from './AlertsFeed'
 import { AIRecommendations } from './AIRecommendations'
 import { ActivityTimeline } from './ActivityTimeline'
+import type { BrokerageAccountInfo } from './types'
 
 const TAB_SECTIONS = [
   { id: 'section-summary', label: 'Summary' },
@@ -36,6 +38,7 @@ export const PortfolioCockpit: React.FC = () => {
   useMarketStream()
   const data = usePortfolioData()
   const scrollRef = useRef<HTMLDivElement>(null)
+  const { selectedAccountId, setSelectedAccountId, availableAccounts } = useStore()
 
   const handleTabClick = (sectionId: string) => {
     const el = document.getElementById(sectionId)
@@ -72,6 +75,30 @@ export const PortfolioCockpit: React.FC = () => {
         >
           Workspace
         </button>
+
+        {/* Multi-Brokerage Account Selector */}
+        <select
+          value={selectedAccountId}
+          onChange={(e) => setSelectedAccountId(e.target.value)}
+          style={{
+            fontFamily: 'var(--qs-font-mono)',
+            fontSize: 'var(--qs-font-xs)',
+            background: 'var(--qs-bg-tertiary)',
+            border: '1px solid var(--qs-border)',
+            borderRadius: 'var(--qs-radius-sm)',
+            color: 'var(--qs-text-primary)',
+            padding: '3px 8px',
+            outline: 'none',
+            cursor: 'pointer',
+            WebkitAppRegion: 'no-drag',
+          } as any}
+        >
+          {availableAccounts.map((acc: BrokerageAccountInfo) => (
+            <option key={acc.accountId} value={acc.accountId}>
+              [{acc.provider}] {acc.accountName} {acc.accountId !== 'ALL' ? `(${acc.accountId})` : ''}
+            </option>
+          ))}
+        </select>
         <div className="pf-titlebar-kpis">
           <span className="pf-titlebar-kpi">
             <span className="pf-titlebar-kpi__label">Net Liq</span>

@@ -38,7 +38,30 @@ export const AccountSummary: React.FC<Props> = ({ account, riskBudgetUsed }) => 
     <div className="pf-kpi-strip" id="section-summary">
       {/* ── Column 1: Account Metrics ────────────── */}
       <div className="pf-kpi-group">
-        <div className="pf-kpi-group__title">Account Summary</div>
+        <div className="pf-kpi-group__title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>Account Summary</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{
+              fontFamily: 'var(--qs-font-mono)',
+              fontSize: '9px',
+              fontWeight: 700,
+              padding: '1px 6px',
+              borderRadius: '3px',
+              background: account.brokerageProvider === 'IBKR' ? 'var(--qs-blue-bg)' : 'var(--qs-bg-elevated)',
+              color: account.brokerageProvider === 'IBKR' ? 'var(--qs-blue)' : 'var(--qs-text-secondary)',
+              border: `1px solid ${account.brokerageProvider === 'IBKR' ? 'var(--qs-blue)' : 'var(--qs-border)'}`,
+            }}>
+              {account.brokerageProvider || 'IBKR'}
+            </span>
+            <span style={{
+              fontFamily: 'var(--qs-font-mono)',
+              fontSize: '9px',
+              color: account.connected ? 'var(--qs-green)' : 'var(--qs-amber)',
+            }}>
+              {account.connected ? '● LIVE' : '○ DEMO'}
+            </span>
+          </span>
+        </div>
         <div className="pf-kpi-grid">
           <KPI label="Net Liquidation" value={fmt(account.netLiquidation)} />
           <KPI label="Cash" value={fmt(account.cash)} />

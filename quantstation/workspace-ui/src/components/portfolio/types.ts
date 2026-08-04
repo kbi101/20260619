@@ -28,7 +28,22 @@ export type AlertCategory =
 
 // ── Account Summary ────────────────────────────────────
 
+export type BrokerageProviderCode = 'IBKR' | 'SCHWAB' | 'ALPACA' | 'MOCK'
+
+export interface BrokerageAccountInfo {
+  accountId: string
+  provider: BrokerageProviderCode
+  accountName: string
+  currency: string
+  connected: boolean
+}
+
 export interface AccountSummaryData {
+  accountId?: string
+  brokerageProvider?: BrokerageProviderCode
+  accountName?: string
+  currency?: string
+  connected?: boolean
   netLiquidation: number
   cash: number
   buyingPower: number

@@ -104,6 +104,43 @@ export function useMarketStream(): void {
           const pnl: PnlSnapshot = JSON.parse(message.body)
           updatePnl(pnl)
         })
+
+        // Subscribe to portfolio account updates
+        client.subscribe('/topic/portfolio/account', (message) => {
+          try {
+            const summary = JSON.parse(message.body)
+            useStore.getState().updateLiveAccountSummary(summary)
+          } catch (e) {
+            console.warn('[QuantStation] Failed to parse portfolio account message:', e)
+          }
+        })
+
+        // Fetch initial portfolio account REST snapshot
+        fetch('http://localhost:8080/api/portfolio/accounts')
+          .then((res) => res.ok ? res.json() : [])
+          .then((accounts) => {
+            if (Array.isArray(accounts) && accounts.length > 0) {
+              const formatted = accounts.map((a: any) => ({
+                accountId: a.accountId,
+                provider: a.provider,
+                accountName: a.accountName || a.accountId,
+                currency: a.currency || 'USD',
+                connected: !!a.connected,
+              }))
+              formatted.unshift({ accountId: 'ALL', provider: 'MOCK', accountName: 'All Accounts (Aggregated)', currency: 'USD', connected: true })
+              useStore.getState().setAvailableAccounts(formatted)
+            }
+          })
+          .catch(() => {})
+
+        fetch('http://localhost:8080/api/portfolio/account')
+          .then((res) => res.ok ? res.json() : null)
+          .then((summary) => {
+            if (summary && summary.netLiquidation) {
+              useStore.getState().updateLiveAccountSummary(summary)
+            }
+          })
+          .catch(() => {})
       },
 
       onDisconnect: () => {
