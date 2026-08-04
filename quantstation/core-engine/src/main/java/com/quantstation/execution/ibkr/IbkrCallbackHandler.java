@@ -363,8 +363,35 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
     }
 
     @Override
+    public void updateAccountValue(String key, String value, String currency, String accountName) {
+        log.info("IB updateAccountValue: key={} val={} curr={} acc={}", key, value, currency, accountName);
+        String acc = (accountName != null && !accountName.isBlank()) ? accountName : "DEFAULT";
+        if (!managedAccountIds.contains(acc)) {
+            managedAccountIds.add(acc);
+        }
+        Map<String, String> tags = accountTags.computeIfAbsent(acc, k -> new ConcurrentHashMap<>());
+        tags.put(key, value);
+        if ("TotalCashBalance".equals(key) || "CashBalance".equals(key)) tags.put("TotalCashValue", value);
+        if ("NetLiquidationByCurrency".equals(key) && ("BASE".equals(currency) || "USD".equals(currency))) tags.put("NetLiquidation", value);
+        rebuildAccountSummary(acc);
+    }
+
+    @Override
+    public void updatePortfolio(Contract contract, Decimal position, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, String accountName) {
+        log.info("IB updatePortfolio: symbol={} pos={} mktPrice={} mktVal={} acc={}", contract.symbol(), position, marketPrice, marketValue, accountName);
+        String acc = (accountName != null && !accountName.isBlank()) ? accountName : "DEFAULT";
+        if (!managedAccountIds.contains(acc)) {
+            managedAccountIds.add(acc);
+        }
+        rebuildAccountSummary(acc);
+    }
+
+    @Override
     public void accountSummary(int reqId, String account, String tag, String value, String currency) {
-        log.debug("IB accountSummary: reqId={} acc={} tag={} val={} curr={}", reqId, account, tag, value, currency);
+        log.info("IB accountSummary: reqId={} acc={} tag={} val={} curr={}", reqId, account, tag, value, currency);
+        if (!managedAccountIds.contains(account)) {
+            managedAccountIds.add(account);
+        }
         accountTags.computeIfAbsent(account, k -> new ConcurrentHashMap<>()).put(tag, value);
         rebuildAccountSummary(account);
     }
@@ -384,15 +411,15 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
 
     private void rebuildAccountSummary(String accountId) {
         Map<String, String> tags = accountTags.getOrDefault(accountId, Map.of());
-        double netLiq = parseDouble(tags.get("NetLiquidation"), 0.0);
-        double cash = parseDouble(tags.get("TotalCashValue"), 0.0);
-        double buyingPower = parseDouble(tags.get("BuyingPower"), 0.0);
-        double grossPos = parseDouble(tags.get("GrossPositionValue"), 0.0);
-        double marginReq = parseDouble(tags.get("FullMaintMarginReq"), 0.0);
-        double availMargin = parseDouble(tags.get("ExcessLiquidity"), 0.0);
-        double realizedPnl = parseDouble(tags.get("RealizedPnL"), 0.0);
-        double unrealizedPnl = parseDouble(tags.get("UnrealizedPnL"), 0.0);
-        double dailyPnl = parseDouble(tags.get("DailyPnL"), realizedPnl + unrealizedPnl);
+        double netLiq = parseDouble(getAny(tags, "NetLiquidation", "NetLiquidationByCurrency", "EquityWithLoanValue"), 0.0);
+        double cash = parseDouble(getAny(tags, "TotalCashValue", "TotalCashBalance", "CashBalance"), 0.0);
+        double buyingPower = parseDouble(getAny(tags, "BuyingPower"), 0.0);
+        double grossPos = parseDouble(getAny(tags, "GrossPositionValue"), 0.0);
+        double marginReq = parseDouble(getAny(tags, "FullMaintMarginReq", "MaintMarginReq", "InitMarginReq"), 0.0);
+        double availMargin = parseDouble(getAny(tags, "ExcessLiquidity", "AvailableFunds", "FullExcessLiquidity"), 0.0);
+        double realizedPnl = parseDouble(getAny(tags, "RealizedPnL"), 0.0);
+        double unrealizedPnl = parseDouble(getAny(tags, "UnrealizedPnL"), 0.0);
+        double dailyPnl = parseDouble(getAny(tags, "DailyPnL"), realizedPnl + unrealizedPnl);
 
         double totalPnl = realizedPnl + unrealizedPnl;
         double todayReturn = (netLiq > 0 && (netLiq - dailyPnl) > 0) ? (dailyPnl / (netLiq - dailyPnl)) * 100.0 : 0.0;
@@ -419,6 +446,14 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
                 java.time.Instant.now()
         );
         accountSummaries.put(accountId, summary);
+    }
+
+    private String getAny(Map<String, String> map, String... keys) {
+        for (String k : keys) {
+            String val = map.get(k);
+            if (val != null && !val.isBlank()) return val;
+        }
+        return null;
     }
 
     private double parseDouble(String str, double defaultVal) {
