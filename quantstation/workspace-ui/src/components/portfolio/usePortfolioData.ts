@@ -20,7 +20,7 @@ export function usePortfolioData(): PortfolioData {
   const { liveAccountSummary, selectedAccountId } = useStore()
 
   const data = useMemo(() => {
-    if (liveAccountSummary && liveAccountSummary.netLiquidation > 0) {
+    if (liveAccountSummary) {
       return {
         ...MOCK_PORTFOLIO_DATA,
         account: {

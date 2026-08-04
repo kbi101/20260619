@@ -384,23 +384,23 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
 
     private void rebuildAccountSummary(String accountId) {
         Map<String, String> tags = accountTags.getOrDefault(accountId, Map.of());
-        double netLiq = parseDouble(tags.get("NetLiquidation"), 2_435_782.0);
-        double cash = parseDouble(tags.get("TotalCashValue"), 412_350.0);
-        double buyingPower = parseDouble(tags.get("BuyingPower"), 1_824_600.0);
-        double grossPos = parseDouble(tags.get("GrossPositionValue"), 2_023_432.0);
-        double marginReq = parseDouble(tags.get("FullMaintMarginReq"), 1_038_032.0);
-        double availMargin = parseDouble(tags.get("ExcessLiquidity"), 985_400.0);
-        double realizedPnl = parseDouble(tags.get("RealizedPnL"), 18_720.0);
-        double unrealizedPnl = parseDouble(tags.get("UnrealizedPnL"), 23_630.0);
+        double netLiq = parseDouble(tags.get("NetLiquidation"), 0.0);
+        double cash = parseDouble(tags.get("TotalCashValue"), 0.0);
+        double buyingPower = parseDouble(tags.get("BuyingPower"), 0.0);
+        double grossPos = parseDouble(tags.get("GrossPositionValue"), 0.0);
+        double marginReq = parseDouble(tags.get("FullMaintMarginReq"), 0.0);
+        double availMargin = parseDouble(tags.get("ExcessLiquidity"), 0.0);
+        double realizedPnl = parseDouble(tags.get("RealizedPnL"), 0.0);
+        double unrealizedPnl = parseDouble(tags.get("UnrealizedPnL"), 0.0);
         double dailyPnl = parseDouble(tags.get("DailyPnL"), realizedPnl + unrealizedPnl);
 
         double totalPnl = realizedPnl + unrealizedPnl;
-        double todayReturn = netLiq > 0 ? (dailyPnl / (netLiq - dailyPnl)) * 100.0 : 1.77;
+        double todayReturn = (netLiq > 0 && (netLiq - dailyPnl) > 0) ? (dailyPnl / (netLiq - dailyPnl)) * 100.0 : 0.0;
 
         com.quantstation.domain.AccountSummary summary = new com.quantstation.domain.AccountSummary(
                 accountId,
                 com.quantstation.brokerage.BrokerageProvider.IBKR,
-                "IBKR Paper Trading",
+                "IBKR Trading Account",
                 "USD",
                 netLiq,
                 cash,
@@ -412,9 +412,9 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
                 realizedPnl,
                 unrealizedPnl,
                 totalPnl,
-                287.40, // commissions
-                2_400_000.0,
-                1_200_000.0,
+                0.0, // commissions
+                grossPos,
+                grossPos,
                 connectionManager != null && connectionManager.isConnected(),
                 java.time.Instant.now()
         );

@@ -24,21 +24,21 @@ import type {
 // ── Account Summary ────────────────────────────────────
 
 const mockAccount: AccountSummaryData = {
-  netLiquidation: 2_435_782,
-  cash: 412_350,
-  buyingPower: 1_824_600,
-  marginRemaining: 985_400,
-  portfolioValue: 2_023_432,
-  todayReturn: 1.77,
-  ytdReturn: 24.3,
-  realizedPnl: 18_720,
-  unrealizedPnl: 23_630,
-  totalPnl: 42_350,
-  commissions: 287.40,
-  borrowFees: 42.10,
-  interest: 156.80,
-  grossExposure: 2_400_000,
-  netExposure: 1_200_000,
+  netLiquidation: 1_000_000,
+  cash: 350_000,
+  buyingPower: 1_200_000,
+  marginRemaining: 650_000,
+  portfolioValue: 650_000,
+  todayReturn: 1.45,
+  ytdReturn: 18.2,
+  realizedPnl: 6_200,
+  unrealizedPnl: 8_300,
+  totalPnl: 14_500,
+  commissions: 142.50,
+  borrowFees: 18.40,
+  interest: 65.20,
+  grossExposure: 950_000,
+  netExposure: 650_000,
 }
 
 // ── Positions ──────────────────────────────────────────

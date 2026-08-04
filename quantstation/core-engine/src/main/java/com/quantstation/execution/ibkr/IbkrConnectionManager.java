@@ -149,6 +149,15 @@ public class IbkrConnectionManager {
                     log.error("IbkrConnectionManager: Failed to set market data type to DELAYED", e);
                 }
 
+                // Request IBKR Account Summary & Positions
+                try {
+                    client.reqAccountSummary(9001, "All", "NetLiquidation,TotalCashValue,BuyingPower,GrossPositionValue,FullMaintMarginReq,ExcessLiquidity,RealizedPnL,UnrealizedPnL");
+                    client.reqPositions();
+                    log.info("IbkrConnectionManager: Requested account summary & positions from IB Gateway");
+                } catch (Exception e) {
+                    log.error("IbkrConnectionManager: Failed to request account summary & positions", e);
+                }
+
                 // Start reader thread
                 EReader reader = new EReader(client, signal);
                 reader.start();
