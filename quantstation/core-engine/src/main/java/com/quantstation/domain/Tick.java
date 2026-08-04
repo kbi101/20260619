@@ -23,6 +23,7 @@ public record Tick(
         String symbol,
         double price,
         int size,
+        long volume,
         String exchange,
         String conditions,
         double bidPrice,
@@ -37,7 +38,7 @@ public record Tick(
      */
     public static Tick trade(String symbol, double price, int size,
                              String exchange, Instant timestamp) {
-        return new Tick(symbol, price, size, exchange, null,
+        return new Tick(symbol, price, size, 0L, exchange, null,
                 0.0, 0.0, 0, 0, 0.0, timestamp);
     }
 
@@ -47,7 +48,7 @@ public record Tick(
     public static Tick quote(String symbol, double bidPrice, double askPrice,
                              int bidSize, int askSize, Instant timestamp) {
         double mid = (bidPrice + askPrice) / 2.0;
-        return new Tick(symbol, mid, 0, null, null,
+        return new Tick(symbol, mid, 0, 0L, null, null,
                 bidPrice, askPrice, bidSize, askSize, 0.0, timestamp);
     }
 

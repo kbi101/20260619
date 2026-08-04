@@ -7,6 +7,7 @@ export interface Tick {
   symbol: string
   price: number
   size: number
+  volume?: number
   exchange: string | null
   conditions: string | null
   bidPrice: number

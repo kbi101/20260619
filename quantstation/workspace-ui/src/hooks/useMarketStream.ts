@@ -19,7 +19,8 @@ const WS_URL = 'ws://localhost:8080/ws'
 export function useMarketStream(): void {
   const clientRef = useRef<Client | null>(null)
   const subscriptionsRef = useRef<Record<string, any>>({})
-  const { connected, setConnected, setIbkrConnected, updateTick, updateOrder, updatePosition, updatePnl, activeSymbol, watchlist } =
+  const fetchedSymbolsRef = useRef<Set<string>>(new Set())
+  const { connected, setConnected, setIbkrConnected, updateTick, updateOrder, updatePosition, updatePnl, activeSymbol, watchlist, manualSymbols, updateFundamentals } =
     useStore()
 
   // Poll IBKR connection status
@@ -146,8 +147,11 @@ export function useMarketStream(): void {
         desiredDestinations.add(`/topic/ticks/${item.symbol}`)
       }
     })
-
-    console.log(`[QuantStation] Effect 2 running. activeSymbol="${activeSymbol}", desiredDestinations=${JSON.stringify(Array.from(desiredDestinations))}, activeSubscriptions=${JSON.stringify(Object.keys(subscriptionsRef.current))}`)
+    manualSymbols.forEach((item) => {
+      if (item.symbol !== activeSymbol) {
+        desiredDestinations.add(`/topic/ticks/${item.symbol}`)
+      }
+    })
 
     // Unsubscribe from destinations no longer needed
     Object.keys(subscriptionsRef.current).forEach((dest) => {
@@ -178,7 +182,6 @@ export function useMarketStream(): void {
 
         try {
           const sub = client.subscribe(dest, (message) => {
-            console.log(`[QuantStation] Received tick for ${symbol} on ${dest}:`, message.body)
             try {
               const tick: Tick = JSON.parse(message.body)
               updateTick(tick)
@@ -212,6 +215,41 @@ export function useMarketStream(): void {
         .catch((err) => {
           console.warn('[QuantStation] Could not seed ticks snapshot for new subscription:', err)
         })
+
     }
-  }, [connected, watchlist, activeSymbol, updateTick])
+  }, [connected, watchlist, manualSymbols, activeSymbol, updateTick])
+
+  // Effect 3: Fundamental Reference Data Hydration (ATR, Avg Volume, Market Cap, Float)
+  useEffect(() => {
+    if (!connected) return
+
+    manualSymbols.forEach((item) => {
+      if (!fetchedSymbolsRef.current.has(item.symbol)) {
+        fetchedSymbolsRef.current.add(item.symbol)
+        fetch(`http://localhost:8080/api/fundamentals?symbol=${item.symbol}`)
+          .then((res) => {
+            if (res.ok) return res.json()
+            throw new Error(`Failed to fetch fundamentals for ${item.symbol}`)
+          })
+          .then((data) => {
+            if (data && data.symbol) {
+              updateFundamentals(data.symbol, {
+                marketCap: data.marketCap,
+                float: data.floatShares,
+                atr: data.atr > 0 ? data.atr : undefined,
+                avgVolume: data.avgVolume > 0 ? data.avgVolume : undefined,
+                sector: data.sector,
+                industry: data.industry,
+                beta: data.beta,
+                shortFloatPercent: data.shortFloatPercent,
+              })
+            }
+          })
+          .catch((err) => {
+            console.warn(`[QuantStation] Could not fetch fundamentals for ${item.symbol}:`, err)
+            fetchedSymbolsRef.current.delete(item.symbol)
+          })
+      }
+    })
+  }, [connected, manualSymbols.length, updateFundamentals])
 }

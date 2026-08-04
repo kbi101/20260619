@@ -1,0 +1,6 @@
+# Workspace Rules & Best Practices
+
+## UI Troubleshooting
+- **Check Console Logs:** When debugging or troubleshooting UI, always check the browser console logs first. Errors, warnings, and uncaught exceptions contain critical stack traces and details that pinpoint the root cause of layout or state rendering issues.
+- **Inspect Network Requests:** Verify API responses, payloads, and request statuses to ensure correct frontend/backend communication.
+- **Analyze Data-Level Formatting:** Audit props, state updates, and values before attempting visual rendering comparisons.

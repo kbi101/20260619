@@ -8,6 +8,7 @@ import { OrderBlotter } from './components/execution/OrderBlotter'
 import { PnlTicker } from './components/pnl/PnlTicker'
 import { IntelDashboard } from './components/intel/IntelDashboard'
 import { SnapshotsBoard } from './components/snapshots/SnapshotsBoard'
+import { WatchlistCommandCenter } from './components/watchlist/WatchlistCommandCenter'
 
 /**
  * QuantStation — Main Workspace Grid Board Component
@@ -184,8 +185,12 @@ const App: React.FC = () => {
     return <SnapshotsBoard />
   }
 
+  if (route.startsWith('#/watchlist')) {
+    return <WatchlistCommandCenter />
+  }
+
   if (route.startsWith('#/intel')) {
-    return <IntelDashboard />
+    return <WatchlistCommandCenter />
   }
 
   return <Workspace />

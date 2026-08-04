@@ -1,9 +1,12 @@
 package com.quantstation.web;
 
+import com.quantstation.domain.FundamentalData;
 import com.quantstation.domain.Order;
 import com.quantstation.execution.OrderManagementSystem;
+import com.quantstation.marketdata.FundamentalDataService;
 import com.quantstation.marketdata.MarketDataProvider;
 import com.quantstation.marketdata.TickRouter;
+import com.quantstation.repository.QuestDbGapFillerService;
 import com.quantstation.repository.QuestDbTickWriter;
 import com.quantstation.repository.RedisStateRepository;
 import com.quantstation.strategy.StrategyEngine;
@@ -31,17 +34,23 @@ public class UiRestController {
     private final StrategyEngine strategyEngine;
     private final RedisStateRepository redisState;
     private final QuestDbTickWriter questDbWriter;
+    private final QuestDbGapFillerService gapFillerService;
+    private final FundamentalDataService fundamentalDataService;
     private final MarketDataProvider marketDataProvider;
 
     public UiRestController(OrderManagementSystem oms,
                             StrategyEngine strategyEngine,
                             RedisStateRepository redisState,
                             QuestDbTickWriter questDbWriter,
+                            QuestDbGapFillerService gapFillerService,
+                            FundamentalDataService fundamentalDataService,
                             MarketDataProvider marketDataProvider) {
         this.oms = oms;
         this.strategyEngine = strategyEngine;
         this.redisState = redisState;
         this.questDbWriter = questDbWriter;
+        this.gapFillerService = gapFillerService;
+        this.fundamentalDataService = fundamentalDataService;
         this.marketDataProvider = marketDataProvider;
     }
 
@@ -50,6 +59,17 @@ public class UiRestController {
     @GetMapping("/ticks/latest")
     public ResponseEntity<Map<String, com.quantstation.domain.Tick>> getLastTicks() {
         return ResponseEntity.ok(marketDataProvider.getLastTicks());
+    }
+
+    // ── Fundamental Reference Data (Weekly Redis Cache) ──
+
+    @GetMapping("/fundamentals")
+    public ResponseEntity<FundamentalData> getFundamentals(@RequestParam String symbol) {
+        FundamentalData data = fundamentalDataService.getFundamentals(symbol);
+        if (data != null) {
+            return ResponseEntity.ok(data);
+        }
+        return ResponseEntity.notFound().build();
     }
 
     // ── Historical Bars ──────────────────────────────
@@ -65,6 +85,20 @@ public class UiRestController {
                         return ResponseEntity.internalServerError().body(err.getMessage());
                     }
                     return ResponseEntity.ok(bars);
+                });
+    }
+
+    @PostMapping("/history/backfill")
+    public java.util.concurrent.CompletableFuture<ResponseEntity<Object>> backfillHistory(
+            @RequestParam String symbol,
+            @RequestParam(defaultValue = "2 D") String duration,
+            @RequestParam(defaultValue = "1 min") String barSize) {
+        return gapFillerService.backfillSymbol(symbol, duration, barSize)
+                .handle((bars, err) -> {
+                    if (err != null) {
+                        return ResponseEntity.internalServerError().body(err.getMessage());
+                    }
+                    return ResponseEntity.ok(Map.of("symbol", symbol, "count", bars.size(), "status", "SUCCESS"));
                 });
     }
 

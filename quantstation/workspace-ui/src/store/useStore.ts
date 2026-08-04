@@ -6,6 +6,8 @@
 import { create } from 'zustand'
 import type { Tick } from '../types/market'
 import type { Order, Position, PnlSnapshot } from '../types/order'
+import type { WatchlistSymbol, CategoryId, WatchlistSortState } from '../components/watchlist/types'
+import { DEFAULT_CATEGORY } from '../components/watchlist/constants'
 
 export interface WatchlistTicker {
   symbol: string
@@ -54,6 +56,29 @@ interface QuantStationState {
   imbalanceHistory: number[]
   updateObiSettings: (settings: Partial<{ decayAlpha: number; smoothingBeta: number }>) => void
   pushImbalanceValue: (val: number) => void
+
+  // ── Multi-Watchlist Command Center ──────────────────
+  activeCategory: CategoryId
+  setActiveCategory: (id: CategoryId) => void
+
+  manualSymbols: WatchlistSymbol[]
+  addManualSymbol: (symbol: string) => void
+  removeManualSymbol: (symbol: string) => void
+  updateManualNote: (symbol: string, note: string) => void
+  updateFundamentals: (symbol: string, data: Partial<WatchlistSymbol>) => void
+
+  favoriteSymbols: string[]   // symbol strings only
+  toggleFavorite: (symbol: string) => void
+  isFavorite: (symbol: string) => boolean
+
+  selectedWatchlistSymbol: string | null
+  setSelectedWatchlistSymbol: (symbol: string | null) => void
+
+  watchlistSort: WatchlistSortState
+  setWatchlistSort: (column: string) => void
+
+  detailPanelOpen: boolean
+  toggleDetailPanel: () => void
 }
 
 const LOCAL_STORAGE_KEY = 'quantstation:watchlist'
@@ -82,6 +107,54 @@ const loadWatchlist = (): WatchlistTicker[] => {
     console.warn('[Zustand Store] Failed to load watchlist from localStorage:', e)
   }
   return DEFAULT_WATCHLIST
+}
+
+const FAVORITES_STORAGE_KEY = 'quantstation:favorites'
+
+const loadManualSymbols = (): WatchlistSymbol[] => {
+  const legacy = loadWatchlist()
+  return legacy.map((item) => {
+    return {
+      symbol: item.symbol,
+      companyName: item.companyName || `${item.symbol} Corp.`,
+      sector: '',
+      industry: '',
+      price: item.prevClose || 0,
+      prevClose: item.prevClose || 0,
+      changePercent: 0,
+      volume: 0,
+      rvol: 0,
+      bidPrice: 0,
+      askPrice: 0,
+      spread: 0,
+      atr: 0,
+      float: 0,
+      marketCap: 0,
+      beta: 0,
+      shortFloatPercent: 0,
+      borrowRate: 0,
+      overallScore: 0,
+      tradeGrade: '--',
+      alertState: 'NONE',
+      categories: ['manual'],
+      addedAt: Date.now(),
+      notes: '',
+      tags: [],
+    }
+  })
+}
+
+const loadFavoriteSymbols = (): string[] => {
+  try {
+    const saved = localStorage.getItem(FAVORITES_STORAGE_KEY)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed)) return parsed
+    }
+  } catch (e) {
+    console.warn('[Zustand Store] Failed to load favorites from localStorage:', e)
+  }
+  return ['NVDA', 'SPY', 'QQQ']
 }
 
 const getSeededSizeForStore = (symbol: string, isBid: boolean, levelIndex: number, l1Size?: number): number => {
@@ -228,6 +301,114 @@ export const useStore = create<QuantStationState>((set) => ({
       smoothedImbalance: state.smoothingBeta * val + (1 - state.smoothingBeta) * state.smoothedImbalance
     };
   }),
+
+  // Multi-Watchlist State
+  activeCategory: DEFAULT_CATEGORY,
+  setActiveCategory: (id) => set({ activeCategory: id }),
+
+  manualSymbols: loadManualSymbols(),
+  addManualSymbol: (symbolStr) =>
+    set((state) => {
+      const upper = symbolStr.toUpperCase().trim()
+      console.log(`[useStore] addManualSymbol called for "${upper}". Existing manualSymbols:`, state.manualSymbols.map(s => s.symbol))
+      if (!upper || state.manualSymbols.some((s) => s.symbol === upper)) {
+        console.warn(`[useStore] addManualSymbol skipped because empty or already exists: "${upper}"`)
+        return {}
+      }
+      const newItem: WatchlistSymbol = {
+        symbol: upper,
+        companyName: `${upper} Corp.`,
+        sector: '',
+        industry: '',
+        price: 0,
+        prevClose: 0,
+        changePercent: 0,
+        volume: 0,
+        rvol: 0,
+        bidPrice: 0,
+        askPrice: 0,
+        spread: 0,
+        atr: 0,
+        float: 0,
+        marketCap: 0,
+        beta: 0,
+        shortFloatPercent: 0,
+        borrowRate: 0,
+        overallScore: 0,
+        tradeGrade: '--',
+        alertState: 'NONE',
+        categories: ['manual'],
+        addedAt: Date.now(),
+        notes: '',
+        tags: [],
+      }
+      const updated = [...state.manualSymbols, newItem]
+      const legacyUpdated = [...state.watchlist, { symbol: upper, prevClose: 0, atr: 0, rvol: 1.0, companyName: `${upper} Corp.` }]
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated.map(s => ({ symbol: s.symbol, prevClose: s.prevClose, atr: s.atr, rvol: s.rvol, companyName: s.companyName }))))
+      } catch (e) {}
+      return { manualSymbols: updated, watchlist: legacyUpdated }
+    }),
+  removeManualSymbol: (symbolStr) =>
+    set((state) => {
+      const upper = symbolStr.toUpperCase().trim()
+      const updated = state.manualSymbols.filter((s) => s.symbol !== upper)
+      const legacyUpdated = state.watchlist.filter((item) => item.symbol !== upper)
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated.map(s => ({ symbol: s.symbol, prevClose: s.prevClose, atr: s.atr, rvol: s.rvol, companyName: s.companyName }))))
+      } catch (e) {}
+      return { manualSymbols: updated, watchlist: legacyUpdated }
+    }),
+  updateManualNote: (symbolStr, note) =>
+    set((state) => {
+      const upper = symbolStr.toUpperCase().trim()
+      const updated = state.manualSymbols.map((s) => (s.symbol === upper ? { ...s, notes: note } : s))
+      return { manualSymbols: updated }
+    }),
+  updateFundamentals: (symbolStr, data) =>
+    set((state) => {
+      const upper = symbolStr.toUpperCase().trim()
+      const updated = state.manualSymbols.map((s) => (s.symbol === upper ? { ...s, ...data } : s))
+      return { manualSymbols: updated }
+    }),
+
+  favoriteSymbols: loadFavoriteSymbols(),
+  toggleFavorite: (symbolStr) =>
+    set((state) => {
+      const upper = symbolStr.toUpperCase().trim()
+      const exists = state.favoriteSymbols.includes(upper)
+      const updated = exists
+        ? state.favoriteSymbols.filter((s) => s !== upper)
+        : [...state.favoriteSymbols, upper]
+      try {
+        localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(updated))
+      } catch (e) {}
+      return { favoriteSymbols: updated }
+    }),
+  isFavorite: (symbolStr) => {
+    const state = useStore.getState()
+    return state.favoriteSymbols.includes(symbolStr.toUpperCase().trim())
+  },
+
+  selectedWatchlistSymbol: 'SPY',
+  setSelectedWatchlistSymbol: (symbol) => set({ selectedWatchlistSymbol: symbol }),
+
+  watchlistSort: { column: 'changePercent', direction: 'desc' },
+  setWatchlistSort: (column) =>
+    set((state) => {
+      if (state.watchlistSort.column === column) {
+        return {
+          watchlistSort: {
+            column,
+            direction: state.watchlistSort.direction === 'asc' ? 'desc' : 'asc',
+          },
+        }
+      }
+      return { watchlistSort: { column, direction: 'desc' } }
+    }),
+
+  detailPanelOpen: true,
+  toggleDetailPanel: () => set((state) => ({ detailPanelOpen: !state.detailPanelOpen })),
 }))
 
 if (typeof window !== 'undefined') {

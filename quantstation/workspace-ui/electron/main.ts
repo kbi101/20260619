@@ -279,9 +279,9 @@ function createIntelWindow(): void {
   intelWindow = new BrowserWindow({
     width: 1600,
     height: 1000,
-    minWidth: 800,
-    minHeight: 600,
-    title: 'Intel Dashboard',
+    minWidth: 1200,
+    minHeight: 700,
+    title: 'QuantStation — Watchlists',
     backgroundColor: '#0a0a0f',
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 16 },
@@ -301,9 +301,9 @@ function createIntelWindow(): void {
   // Load the renderer pointing to hash route
   const devServerUrl = process.env.VITE_DEV_SERVER_URL || process.env.ELECTRON_RENDERER_URL
   if (devServerUrl) {
-    intelWindow.loadURL(`${devServerUrl}#/intel`)
+    intelWindow.loadURL(`${devServerUrl}#/watchlist`)
   } else {
-    intelWindow.loadFile(path.join(__dirname, '../dist/index.html'), { hash: '/intel' })
+    intelWindow.loadFile(path.join(__dirname, '../dist/index.html'), { hash: '/watchlist' })
   }
 
   forwardConsole(intelWindow, 'Intel')
@@ -673,7 +673,7 @@ function createApplicationMenu(): void {
           click: () => toggleWorkspaceWindow()
         },
         {
-          label: 'Intel Dashboard',
+          label: 'Watchlists',
           type: 'checkbox',
           checked: isWindowVisible(intelWindow),
           accelerator: 'CmdOrCtrl+2',

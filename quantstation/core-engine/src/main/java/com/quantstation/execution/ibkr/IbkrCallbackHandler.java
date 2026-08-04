@@ -139,7 +139,9 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
             }
         }
 
-        updated = new Tick(symbol, finalPrice, size, exchange, conditions,
+        long cumVolume = (last == null) ? 0L : last.volume();
+
+        updated = new Tick(symbol, finalPrice, size, cumVolume, exchange, conditions,
                 bid, ask, bidSize, askSize, prevClose, Instant.now());
 
         lastTicks.put(symbol, updated);
@@ -153,26 +155,36 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
         String symbol = marketDataAdapter.getSymbolForReqId(tickerId);
         if (symbol == null) return;
 
-        // Map delayed fields (69: BID_SIZE, 70: ASK_SIZE, 71: LAST_SIZE) to standard fields (0, 3, 5)
+        // Map delayed fields (69: BID_SIZE, 70: ASK_SIZE, 71: LAST_SIZE, 74: VOLUME) to standard fields (0, 3, 5, 8)
         int effectiveField = field;
         if (field == 69) effectiveField = 0;
         else if (field == 70) effectiveField = 3;
         else if (field == 71) effectiveField = 5;
+        else if (field == 74) effectiveField = 8;
 
         Tick last = lastTicks.get(symbol);
         if (last == null) return;
 
         Tick updated;
-        int sizeVal = size.value().intValue();
+        long sizeVal = size.value().longValue();
+        int sizeInt = size.value().intValue();
 
         if (effectiveField == 0) { // BID_SIZE
-            updated = new Tick(symbol, last.price(), last.size(), last.exchange(), last.conditions(),
-                    last.bidPrice(), last.askPrice(), sizeVal, last.askSize(), last.prevClose(), Instant.now());
+            updated = new Tick(symbol, last.price(), last.size(), last.volume(), last.exchange(), last.conditions(),
+                    last.bidPrice(), last.askPrice(), sizeInt, last.askSize(), last.prevClose(), Instant.now());
         } else if (effectiveField == 3) { // ASK_SIZE
-            updated = new Tick(symbol, last.price(), last.size(), last.exchange(), last.conditions(),
-                    last.bidPrice(), last.askPrice(), last.bidSize(), sizeVal, last.prevClose(), Instant.now());
+            updated = new Tick(symbol, last.price(), last.size(), last.volume(), last.exchange(), last.conditions(),
+                    last.bidPrice(), last.askPrice(), last.bidSize(), sizeInt, last.prevClose(), Instant.now());
         } else if (effectiveField == 5) { // LAST_SIZE
-            updated = new Tick(symbol, last.price(), sizeVal, last.exchange(), last.conditions(),
+            updated = new Tick(symbol, last.price(), sizeInt, last.volume(), last.exchange(), last.conditions(),
+                    last.bidPrice(), last.askPrice(), last.bidSize(), last.askSize(), last.prevClose(), Instant.now());
+        } else if (effectiveField == 8) { // CUMULATIVE VOLUME
+            long actualVol = sizeVal;
+            if (actualVol > 100_000_000L) {
+                actualVol = actualVol / 1_000_000L;
+            }
+            log.info("IBKR MarketData: Received VOLUME for {} raw sizeVal={}, actualVol={}", symbol, sizeVal, actualVol);
+            updated = new Tick(symbol, last.price(), last.size(), actualVol, last.exchange(), last.conditions(),
                     last.bidPrice(), last.askPrice(), last.bidSize(), last.askSize(), last.prevClose(), Instant.now());
         } else {
             return;
@@ -200,12 +212,14 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
         double prevClose = (last == null) ? 0.0 : last.prevClose();
 
         int sizeVal = size != null ? size.value().intValue() : 0;
-        Instant timestamp = Instant.ofEpochSecond(time);
+        long cumVolume = (last == null) ? 0L : last.volume();
+        Instant ts = Instant.ofEpochSecond(time);
 
         Tick updated = new Tick(
                 symbol,
                 price,
                 sizeVal,
+                cumVolume,
                 exchange,
                 specialConditions,
                 bid,
@@ -213,7 +227,7 @@ public class IbkrCallbackHandler extends DefaultEWrapper {
                 bidSize,
                 askSize,
                 prevClose,
-                timestamp
+                ts
         );
 
         lastTicks.put(symbol, updated);
