@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openIntelWindow: () => ipcRenderer.send('window:open-intel'),
   openWorkspaceWindow: () => ipcRenderer.send('window:open-workspace'),
   openSnapshotsWindow: () => ipcRenderer.send('window:open-snapshots'),
+  openPortfolioWindow: () => ipcRenderer.send('window:open-portfolio'),
 
   // Snapshots APIs
   getSnapshots: (date?: string) => ipcRenderer.invoke('snapshots:list', date),
@@ -72,6 +73,7 @@ declare global {
       openIntelWindow: () => void
       openWorkspaceWindow: () => void
       openSnapshotsWindow: () => void
+      openPortfolioWindow: () => void
       getSnapshots: (date?: string) => Promise<SnapshotMeta[]>
       readSnapshot: (filename: string, date?: string) => Promise<string>
       saveSnapshot: (payload: { category: string; filename: string; base64Data: string }) => Promise<void>

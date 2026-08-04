@@ -11,22 +11,24 @@ app.disableHardwareAcceleration()
 let mainWindow: BrowserWindow | null = null
 let intelWindow: BrowserWindow | null = null
 let snapshotsWindow: BrowserWindow | null = null
+let portfolioWindow: BrowserWindow | null = null
 let isQuitting = false
 
 interface WindowState {
   workspace: boolean
   intel: boolean
   snapshots: boolean
+  portfolio: boolean
 }
 
-let currentWindowState: WindowState = { workspace: true, intel: true, snapshots: false }
+let currentWindowState: WindowState = { workspace: true, intel: true, snapshots: false, portfolio: false }
 
 const getWindowStatePath = (): string => {
   return path.join(app.getPath('userData'), 'window-state.json')
 }
 
 function loadWindowState(): WindowState {
-  const defaultState: WindowState = { workspace: true, intel: true, snapshots: false }
+  const defaultState: WindowState = { workspace: true, intel: true, snapshots: false, portfolio: false }
   try {
     const statePath = getWindowStatePath()
     if (fs.existsSync(statePath)) {
@@ -36,6 +38,7 @@ function loadWindowState(): WindowState {
         workspace: typeof parsed.workspace === 'boolean' ? parsed.workspace : defaultState.workspace,
         intel: typeof parsed.intel === 'boolean' ? parsed.intel : defaultState.intel,
         snapshots: typeof parsed.snapshots === 'boolean' ? parsed.snapshots : defaultState.snapshots,
+        portfolio: typeof parsed.portfolio === 'boolean' ? parsed.portfolio : defaultState.portfolio,
       }
     }
   } catch (err) {
@@ -143,6 +146,9 @@ function notifySnapshotsUpdated(): void {
     }
     if (snapshotsWindow && !snapshotsWindow.isDestroyed()) {
       snapshotsWindow.webContents.send('snapshots:updated', snapshots)
+    }
+    if (portfolioWindow && !portfolioWindow.isDestroyed()) {
+      portfolioWindow.webContents.send('snapshots:updated', snapshots)
     }
   })
 }
@@ -455,6 +461,83 @@ function toggleSnapshotsWindow(): void {
   }
 }
 
+function createPortfolioWindow(show = true): void {
+  portfolioWindow = new BrowserWindow({
+    width: 1920,
+    height: 1080,
+    minWidth: 1280,
+    minHeight: 720,
+    title: 'QuantStation — Portfolio',
+    backgroundColor: '#0a0a0f',
+    titleBarStyle: 'hiddenInset',
+    trafficLightPosition: { x: 16, y: 16 },
+    show,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  })
+
+  portfolioWindow.on('page-title-updated', (event) => {
+    event.preventDefault()
+  })
+
+  const devServerUrl = process.env.VITE_DEV_SERVER_URL || process.env.ELECTRON_RENDERER_URL
+  if (devServerUrl) {
+    portfolioWindow.loadURL(`${devServerUrl}#/portfolio`)
+  } else {
+    portfolioWindow.loadFile(path.join(__dirname, '../dist/index.html'), { hash: '/portfolio' })
+  }
+
+  forwardConsole(portfolioWindow, 'Portfolio')
+  registerDevShortcuts(portfolioWindow)
+
+  portfolioWindow.on('closed', () => {
+    portfolioWindow = null
+    if (!isQuitting) {
+      currentWindowState.portfolio = false
+      saveWindowState()
+    }
+    createApplicationMenu()
+  })
+  portfolioWindow.on('show', () => {
+    currentWindowState.portfolio = true
+    saveWindowState()
+    createApplicationMenu()
+  })
+  portfolioWindow.on('hide', () => {
+    if (!isQuitting) {
+      currentWindowState.portfolio = false
+      saveWindowState()
+    }
+    createApplicationMenu()
+  })
+}
+
+function showPortfolioWindow(): void {
+  currentWindowState.portfolio = true
+  saveWindowState()
+  if (portfolioWindow && !portfolioWindow.isDestroyed()) {
+    portfolioWindow.show()
+    portfolioWindow.focus()
+  } else {
+    createPortfolioWindow()
+  }
+  createApplicationMenu()
+}
+
+function togglePortfolioWindow(): void {
+  if (isWindowVisible(portfolioWindow)) {
+    currentWindowState.portfolio = false
+    saveWindowState()
+    portfolioWindow?.close()
+  } else {
+    showPortfolioWindow()
+  }
+}
+
 // Window controls IPC handlers (generic for active sender window)
 ipcMain.on('window:minimize', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender)
@@ -497,6 +580,11 @@ ipcMain.on('window:open-workspace', () => {
 ipcMain.on('window:open-snapshots', () => {
   console.log('[IPC Router] Opening/Focusing Snapshots Board...')
   showSnapshotsWindow()
+})
+
+ipcMain.on('window:open-portfolio', () => {
+  console.log('[IPC Router] Opening/Focusing Portfolio...')
+  showPortfolioWindow()
 })
 
 ipcMain.handle('snapshots:list', async (event, date?: string) => {
@@ -686,6 +774,13 @@ function createApplicationMenu(): void {
           accelerator: 'CmdOrCtrl+3',
           click: () => toggleSnapshotsWindow()
         },
+        {
+          label: 'Portfolio',
+          type: 'checkbox',
+          checked: isWindowVisible(portfolioWindow),
+          accelerator: 'CmdOrCtrl+4',
+          click: () => togglePortfolioWindow()
+        },
         { type: 'separator' },
         { role: 'reload' },
         { role: 'forceReload' },
@@ -718,6 +813,7 @@ app.whenReady().then(() => {
   if (currentWindowState.intel) createIntelWindow()
   if (currentWindowState.snapshots) createSnapshotsWindow(true)
   else createSnapshotsWindow(false)
+  if (currentWindowState.portfolio) createPortfolioWindow(true)
 
   createApplicationMenu()
   startWatchingSnapshots()
@@ -730,7 +826,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-  if (mainWindow === null && intelWindow === null && snapshotsWindow === null) {
+  if (mainWindow === null && intelWindow === null && snapshotsWindow === null && portfolioWindow === null) {
     createWindow()
     createApplicationMenu()
     saveWindowState()

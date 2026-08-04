@@ -8,6 +8,9 @@
 ### 📊 Intel & Watchlist Dashboard
 ![QuantStation Intel & Watchlist Dashboard](docs/images/intel_dashboard.png)
 
+### 🛡️ Portfolio Risk Management Cockpit
+![QuantStation Portfolio Risk Management Cockpit](docs/images/portfolio_dashboard.png)
+
 ## Architecture
 
 ```mermaid
@@ -119,15 +122,18 @@ Spring Boot's `execution/` package owns the entire order lifecycle.
 Market data ingestion → Redis (live state) → QuestDB (time-series storage).
 The `marketdata/` package handles adapters (IBKR, Massive.com, Alpha Vantage).
 
-### Dual-Window UI System
-The workspace is split into two specialized desktop windows to support multi-monitor workstation setups:
-1. **Workspace Window**: Main charting interface, live order book, and order execution tools.
-2. **Intel Dashboard Window**: A secondary window displaying daily watchlists, economic calendars, live news feeds, and daily checklist logs.
+### Multi-Window UI System
+The workspace is split into specialized desktop windows to support multi-monitor workstation setups:
+1. **Workspace Window** (`Cmd+1`): Main charting interface, live order book, and order execution tools.
+2. **Watchlists Command Center** (`Cmd+2`): Multi-watchlist screening, sector tracking, technical filters, and symbol detail breakdown.
+3. **Snapshots Board Window** (`Cmd+3`): Multi-category visual trade journal for instant snapshot review.
+4. **Portfolio Risk Cockpit** (`Cmd+4`): Institutional-grade portfolio risk dashboard, Greeks, VaR, market exposure, strategy allocation, AI position health, and performance attribution.
 
-Windows can be closed individually and reopened dynamically at any time using the macOS menu bar or standard keyboard shortcuts (`Cmd+N` / `Cmd+I`) without restarting the application.
+Windows can be closed individually and reopened dynamically at any time using the macOS View menu or standard keyboard shortcuts (`Cmd+1` through `Cmd+4`) without restarting the application.
 
 ### Zero-Latency IPC Sync
-An Electron IPC event router handles instantaneous cross-window state synchronization. For example, selecting or clicking any ticker in the *Intel Dashboard* watchlist automatically triggers an immediate update to the active chart and order book symbols in the main *Workspace* window.
+An Electron IPC event router handles instantaneous cross-window state synchronization. For example, selecting or clicking any ticker in the *Watchlist Command Center* or *Portfolio Cockpit* automatically triggers an immediate update to the active chart and order book symbols in the main *Workspace* window.
 
 ### Session State Persistence
-Trader checklists and daily note states are persisted in Redis via Spring Boot REST APIs. Keyboard inputs are debounced by 1 second to optimize write loads, ensuring that state is saved seamlessly across sessions and window restarts.
+Trader checklists, daily notes, and window layouts are persisted across sessions. Keyboard inputs are debounced to optimize write loads, ensuring that state is saved seamlessly across sessions and window restarts.
+

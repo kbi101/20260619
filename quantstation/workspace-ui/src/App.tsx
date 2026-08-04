@@ -9,6 +9,7 @@ import { PnlTicker } from './components/pnl/PnlTicker'
 import { IntelDashboard } from './components/intel/IntelDashboard'
 import { SnapshotsBoard } from './components/snapshots/SnapshotsBoard'
 import { WatchlistCommandCenter } from './components/watchlist/WatchlistCommandCenter'
+import { PortfolioCockpit } from './components/portfolio/PortfolioCockpit'
 
 /**
  * QuantStation — Main Workspace Grid Board Component
@@ -98,6 +99,23 @@ const Workspace: React.FC = () => {
           } as any}
         >
           Snapshots Board
+        </button>
+        <button
+          onClick={() => window.electronAPI?.openPortfolioWindow()}
+          style={{
+            fontFamily: 'var(--qs-font-sans)',
+            fontSize: 'var(--qs-font-xs)',
+            background: 'var(--qs-bg-primary)',
+            border: '1px solid var(--qs-border)',
+            borderRadius: 'var(--qs-radius-sm)',
+            color: 'var(--qs-text-secondary)',
+            padding: '4px 10px',
+            cursor: 'pointer',
+            WebkitAppRegion: 'no-drag',
+            outline: 'none',
+          } as any}
+        >
+          Portfolio
         </button>
         <span className="titlebar__status" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span className={`pulse-dot ${ibkrConnected ? 'pulse-dot--active' : 'pulse-dot--inactive'}`} />
@@ -191,6 +209,10 @@ const App: React.FC = () => {
 
   if (route.startsWith('#/intel')) {
     return <WatchlistCommandCenter />
+  }
+
+  if (route.startsWith('#/portfolio')) {
+    return <PortfolioCockpit />
   }
 
   return <Workspace />
