@@ -34,12 +34,17 @@ function loadWindowState(): WindowState {
     if (fs.existsSync(statePath)) {
       const data = fs.readFileSync(statePath, 'utf8')
       const parsed = JSON.parse(data)
-      return {
+      const state = {
         workspace: typeof parsed.workspace === 'boolean' ? parsed.workspace : defaultState.workspace,
         intel: typeof parsed.intel === 'boolean' ? parsed.intel : defaultState.intel,
         snapshots: typeof parsed.snapshots === 'boolean' ? parsed.snapshots : defaultState.snapshots,
         portfolio: typeof parsed.portfolio === 'boolean' ? parsed.portfolio : defaultState.portfolio,
       }
+      // If all windows are false, fallback to defaultState so app never starts with 0 visible windows
+      if (!state.workspace && !state.intel && !state.snapshots && !state.portfolio) {
+        return defaultState
+      }
+      return state
     }
   } catch (err) {
     console.error('[WindowState] Error loading window state:', err)
@@ -826,9 +831,7 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-  if (mainWindow === null && intelWindow === null && snapshotsWindow === null && portfolioWindow === null) {
+  if (!isWindowVisible(mainWindow) && !isWindowVisible(intelWindow) && !isWindowVisible(portfolioWindow)) {
     createWindow()
-    createApplicationMenu()
-    saveWindowState()
   }
 })
